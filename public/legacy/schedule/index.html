@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Расписание преподавателей</title>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #f8f9fb;
+    --card: #ffffff;
+    --border: #e8eaed;
+    --border-hover: #d1d5db;
+    --text: #1a1a2e;
+    --text-secondary: #6b7280;
+    --accent: #4361ee;
+    --accent-light: #eef1ff;
+    --green: #10b981;
+    --green-light: #ecfdf5;
+    --orange: #f59e0b;
+    --orange-light: #fffbeb;
+    --purple: #8b5cf6;
+    --purple-light: #f5f3ff;
+    --shadow: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+    --shadow-lg: 0 4px 16px rgba(0,0,0,.08);
+    --radius: 12px;
+    --pair-hover: #fafbfd;
+    --error: #ef4444;
+    --error-light: #fef2f2;
+    --loading: #9ca3af;
+  }
+
+  [data-theme="dark"] {
+    --bg: #0f1117;
+    --card: #1a1d27;
+    --border: #2a2d3a;
+    --border-hover: #3a3d4a;
+    --text: #e4e6eb;
+    --text-secondary: #9ca3af;
+    --accent: #6381ff;
+    --accent-light: #1e2444;
+    --green: #34d399;
+    --green-light: #0d2818;
+    --orange: #fbbf24;
+    --orange-light: #2a2008;
+    --purple: #a78bfa;
+    --purple-light: #1e1640;
+    --shadow: 0 1px 3px rgba(0,0,0,.3), 0 1px 2px rgba(0,0,0,.2);
+    --shadow-lg: 0 4px 16px rgba(0,0,0,.4);
+    --pair-hover: #1f2230;
+    --error: #f87171;
+    --error-light: #2a1010;
+    --loading: #6b7280;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+    padding: 24px 16px;
+    transition: background .3s, color .3s;
+  }
+
+  .container { max-width: 960px; margin: 0 auto; }
+
+  header {
+    text-align: center;
+    margin-bottom: 40px;
+    padding: 40px 24px;
+    background: linear-gradient(135deg, #4361ee 0%, #7c3aed 100%);
+    border-radius: var(--radius);
+    color: #fff;
+    box-shadow: var(--shadow-lg);
+    position: relative;
+  }
+
+  header h1 { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 6px; }
+  header p { font-size: 0.9rem; opacity: .85; font-weight: 300; }
+
+  .theme-toggle {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 44px;
+    height: 24px;
+    background: rgba(255,255,255,.2);
+    border: none;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background .3s;
+    display: flex;
+    align-items: center;
+    padding: 2px;
+  }
+
+  .theme-toggle:hover { background: rgba(255,255,255,.3); }
+
+  .theme-toggle .knob {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: #fff;
+    transition: transform .3s;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+  }
+
+  [data-theme="dark"] .theme-toggle .knob { transform: translateX(20px); }
+
+  .search-row { display: flex; gap: 8px; margin-bottom: 24px; align-items: stretch; }
+  .search-wrap { flex: 1; position: relative; }
+
+  .search-wrap svg {
+    position: absolute; left: 14px; top: 50%;
+    transform: translateY(-50%);
+    width: 16px; height: 16px;
+    color: var(--text-secondary); opacity: .6;
+    pointer-events: none;
+  }
+
+  .search-input {
+    width: 100%;
+    padding: 12px 16px 12px 40px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-family: inherit; font-size: 0.9rem;
+    background: var(--card); color: var(--text);
+    outline: none;
+    transition: border-color .2s, box-shadow .2s;
+  }
+
+  .search-input::placeholder { color: var(--text-secondary); opacity: .7; }
+  .search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(67,97,238,.15); }
+
+  .search-btn {
+    padding: 12px 24px;
+    border: none; border-radius: var(--radius);
+    background: var(--accent); color: #fff;
+    font-family: inherit; font-size: 0.85rem; font-weight: 600;
+    cursor: pointer; white-space: nowrap;
+    transition: opacity .2s;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  .search-btn:hover { opacity: .85; }
+  .search-btn:disabled { opacity: .5; cursor: default; }
+
+  .spinner {
+    width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,.4);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+    display: none;
+  }
+  .search-btn.loading .spinner { display: inline-block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .tabs { display: flex; gap: 6px; margin-bottom: 28px; overflow-x: auto; padding-bottom: 4px; }
+
+  .tab {
+    padding: 10px 20px;
+    border: none; border-radius: 999px;
+    font-family: inherit; font-size: 0.85rem; font-weight: 500;
+    cursor: pointer; white-space: nowrap;
+    background: var(--card); color: var(--text-secondary);
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+    transition: all .2s;
+  }
+
+  .tab:hover { color: var(--text); border-color: var(--border-hover); }
+  .tab.active { background: var(--accent); color: #fff; border-color: var(--accent); box-shadow: 0 2px 8px rgba(67,97,238,.35); }
+  .tab.tab-custom { border-style: dashed; }
+  .tab.tab-custom.active { border-style: solid; }
+
+  .tab-remove {
+    display: inline-block; margin-left: 6px;
+    width: 16px; height: 16px; line-height: 14px;
+    text-align: center; border-radius: 50%;
+    background: rgba(255,255,255,.25);
+    font-size: 10px; cursor: pointer; vertical-align: middle;
+  }
+
+  .day-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 16px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    transition: background .3s, border-color .3s;
+  }
+
+  .day-header {
+    padding: 14px 20px;
+    font-weight: 600; font-size: 0.95rem;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+  }
+
+  .day-header .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+  .day-header .date { font-weight: 400; color: var(--text-secondary); margin-left: auto; font-size: 0.85rem; }
+
+  .pair {
+    display: grid;
+    grid-template-columns: 72px 1fr auto;
+    gap: 12px;
+    padding: 12px 20px;
+    align-items: start;
+    border-bottom: 1px solid var(--border);
+    transition: background .15s;
+  }
+
+  .pair:last-child { border-bottom: none; }
+  .pair:hover { background: var(--pair-hover); }
+
+  .pair-num {
+    font-size: 0.75rem; font-weight: 600;
+    color: var(--accent); background: var(--accent-light);
+    padding: 4px 10px; border-radius: 6px;
+    text-align: center; margin-top: 2px; white-space: nowrap;
+  }
+
+  .pair-info { min-width: 0; }
+  .pair-subject { font-weight: 500; font-size: 0.9rem; margin-bottom: 3px; word-wrap: break-word; }
+
+  .pair-meta {
+    font-size: 0.8rem; color: var(--text-secondary);
+    display: flex; flex-wrap: wrap; gap: 6px 14px;
+  }
+  .pair-meta span { white-space: nowrap; }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 10px; border-radius: 6px;
+    font-size: 0.75rem; font-weight: 500; white-space: nowrap;
+  }
+
+  .badge-time { background: var(--accent-light); color: var(--accent); }
+  .badge-room { background: var(--green-light); color: var(--green); }
+  .badge-distant { background: var(--orange-light); color: var(--orange); }
+  .badge-practice { background: var(--purple-light); color: var(--purple); }
+  .badges { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 2px; }
+
+  .empty-state { text-align: center; padding: 48px 24px; color: var(--loading); font-size: 0.9rem; }
+  .empty-state .icon { font-size: 2rem; margin-bottom: 8px; }
+
+  .status-line {
+    text-align: center; color: var(--loading);
+    font-size: 0.85rem; margin: 24px 0;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+  }
+
+  .error-card {
+    background: var(--error-light);
+    border: 1px solid var(--error);
+    color: var(--error);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    margin-bottom: 10px;
+    font-size: 0.85rem;
+  }
+
+  @media (max-width: 600px) {
+    .pair { grid-template-columns: 1fr; gap: 6px; }
+    .pair-num { justify-self: start; }
+    .badges { justify-self: start; }
+    header h1 { font-size: 1.35rem; }
+    .search-row { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <button class="theme-toggle" onclick="toggleTheme()" aria-label="Переключить тему">
+      <div class="knob"><span class="theme-icon">&#9790;</span></div>
+    </button>
+    <h1>Расписание преподавателей</h1>
+    <p id="headerPeriod">Загрузка данных...</p>
+  </header>
+
+  <div class="search-row">
+    <div class="search-wrap">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.2-5.2m0 0A7.5 7.5 0 1 0 5.8 5.8a7.5 7.5 0 0 0 10 10Z"/>
+      </svg>
+      <input id="searchInput" class="search-input" type="text" placeholder="Введите фамилию преподавателя..." />
+    </div>
+    <button id="searchBtn" class="search-btn" onclick="addTeacher()">
+      <span class="spinner"></span>Показать
+    </button>
+  </div>
+
+  <div id="status" class="status-line" style="display:none;"></div>
+
+  <div id="tabs" class="tabs"></div>
+  <div id="content"><div class="empty-state"><div class="icon">&#8987;</div><div>Загрузка расписания из Google Таблиц...</div></div></div>
+</div>
+
+<script>
+// ===== Настройки =====
+var SHEET_ID = '1X6YF54l1rgP7MFfkTa1b_L6f4f3aWuADZwF8wwTWKK4';
+var GID = '1584915456';
+// Читаем всю книгу (xlsx): в ней все листы ("1 курс".."4 курс" и др.), как в ноутбуке (ws.worksheets()).
+var SHEET_URL = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/export?format=xlsx';
+
+// ===== Константы (как в ноутбуке) =====
+var DAYS = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
+var DAY_BLOCKS = {
+  'Понедельник': [2, 13],
+  'Вторник': [15, 26],
+  'Среда': [28, 39],
+  'Четверг': [41, 52],
+  'Пятница': [54, 65],
+  'Суббота': [67, 78]
+};
+var DAY_ORDER = { 'Понедельник':0, 'Вторник':1, 'Среда':2, 'Четверг':3, 'Пятница':4, 'Суббота':5 };
+
+var PAIR_TIMES_MON_FRI = {
+  1:'08:30–10:00',2:'10:10–11:40',3:'12:20–13:50',4:'14:10–15:40',5:'15:50–17:20',6:'17:30–19:00'
+};
+var PAIR_TIMES_SAT = {
+  1:'08:30–10:00',2:'10:10–11:40',3:'11:50–13:20',4:'13:30–15:00',5:'15:10–16:40'
+};
+
+var allRows = [];          // полное расписание (все преподаватели)
+var loadedTeachers = [];   // список фамилий, которые есть в данных
+var activeTeachers = [];   // открытые вкладки
+var activeTab = null;
+
+// ===== CSV парсер =====
+function parseCSV(text) {
+  var rows = [], row = [], field = '', i = 0, inQuotes = false;
+  for (i = 0; i < text.length; i++) {
+    var ch = text[i];
+    if (inQuotes) {
+      if (ch === '"') {
+        if (text[i+1] === '"') { field += '"'; i++; }
+        else { inQuotes = false; }
+      } else {
+        field += ch;
+      }
+    } else {
+      if (ch === '"') { inQuotes = true; }
+      else if (ch === ',') { row.push(field); field = ''; }
+      else if (ch === '\n') { row.push(field); rows.push(row); row = []; field = ''; }
+      else if (ch === '\r') { /* skip */ }
+      else { field += ch; }
+    }
+  }
+  if (field !== '' || row.length) { row.push(field); rows.push(row); }
+  // убрать полностью пустые строки в конце
+  while (rows.length && rows[rows.length-1].every(function(c){ return (c||'').trim()===''; })) rows.pop();
+  return rows;
+}
+
+function norm(s) { return (s||'').trim().toLowerCase().replace(/\s+/g, ' '); }
+
+var RUS_DAYS_SHORT = ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
+function pad2(n) { return n < 10 ? '0' + n : '' + n; }
+function formatDayDate(d) {
+  // d — JS Date (из ячейки-даты xlsx). Возвращает ["Понедельник","31.08"]
+  var wd = d.getDay(); // 0=Вс
+  var r = ['Воскресенье','Понедельник','Вторник','Среда','Четверг','Пятница','Суббота'];
+  var dayName = r[wd];
+  var date = pad2(d.getDate()) + '.' + pad2(d.getMonth()+1);
+  return [dayName, date];
+}
+
+function parseDayAndDate(cellA) {
+  if (cellA instanceof Date) {
+    var fd = formatDayDate(cellA);
+    return [fd[0], fd[1]];
+  }
+  var raw = (cellA||'').trim();
+  if (!raw) return [null, null];
+  var parts = raw.split(/[ \t]+/);
+  var day = parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
+  var date = parts.length > 1 ? parts.slice(1).join(' ').trim() : '—';
+  if (DAY_ORDER[day] === undefined) return [null, null];
+  return [day, date || '—'];
+}
+
+function pairTime(dayName, pairNum) {
+  if (dayName === 'Суббота') return PAIR_TIMES_SAT[pairNum] || '—';
+  return PAIR_TIMES_MON_FRI[pairNum] || '—';
+}
+
+function parseCabinet(value, subject) {
+  var raw = (value||'').trim();
+  var v = norm(raw).replace(/\./g, '');
+  var subj = norm(subject);
+  var DIST = ['эл','эл.','дист','дист.','дистанционно','онлайн','online'];
+  if (DIST.indexOf(v) !== -1) return 'Дистанционно';
+  if (!raw && subj.indexOf('практик') !== -1) return 'Практика';
+  return raw || '—';
+}
+
+function buildGroupMap(header) {
+  var groups = [];
+  var c = 2, n = header.length;
+  while (c < n) {
+    var cell = (header[c]||'').trim();
+    if (cell) {
+      var cab = (c+3 < n) ? c+3 : null;
+      groups.push({ group: cell, subjectCols: [c,c+1,c+2],
+        teacherCols: (cab!==null ? [c,c+1,c+2,cab] : [c,c+1,c+2]), cabCol: cab });
+      c += 4;
+    } else {
+      c += 1;
+    }
+  }
+  return groups;
+}
+
+function getFirstNonempty(row, cols) {
+  for (var i=0;i<cols.length;i++) {
+    var c = cols[i];
+    if (c < row.length && row[c] && (row[c]+'').trim()) return [(row[c]+'').trim(), c];
+  }
+  return ['', null];
+}
+
+// ===== Парсинг полного расписания (аналог parse_full_schedule) =====
+// course — название листа (как ws.title в ноутбуке)
+function buildFullSchedule(data, course) {
+  var results = [];
+  var seen = {};
+  var header = data[1] || [];
+  var groups = buildGroupMap(header);
+  if (!groups.length) return results;
+
+  Object.keys(DAY_BLOCKS).forEach(function(dayName) {
+    var blk = DAY_BLOCKS[dayName];
+    var startRow = blk[0], endRow = blk[1];
+    if (startRow >= data.length) return;
+
+    var dayCell = data[startRow] && data[startRow].length ? data[startRow][0] : '';
+    var parsed = parseDayAndDate(dayCell);
+    var dayFinal = parsed[0] || dayName;
+    var dateFinal = parsed[1] || '—';
+
+    var pairNum = 1;
+    var r = startRow;
+    while (r <= Math.min(endRow, data.length-2)) {
+      var rowSubject = data[r] || [];
+      var rowTeacher = data[r+1] || [];
+
+      if (rowSubject[1] && (rowSubject[1]+'').trim().match(/^\d+$/)) {
+        pairNum = parseInt((rowSubject[1]+'').trim(), 10);
+      }
+
+      groups.forEach(function(gb) {
+        var t = getFirstNonempty(rowTeacher, gb.teacherCols);
+        var teacherCell = t[0];
+        var s = getFirstNonempty(rowSubject, gb.subjectCols);
+        var subject = s[0];
+        if (!teacherCell && !subject) return;
+
+        var cabRaw = '';
+        if (gb.cabCol !== null && gb.cabCol < rowSubject.length) cabRaw = (rowSubject[gb.cabCol]+'').trim();
+        var cabinet = parseCabinet(cabRaw, subject);
+
+        var item = {
+          'День': dayFinal, 'Дата': dateFinal, 'Пара': pairNum,
+          'Время': pairTime(dayFinal, pairNum),
+          'Курс': course || '',
+          'Группа': gb.group,
+          'Предмет': subject || '—',
+          'Кабинет': cabinet,
+          'Преподаватель': teacherCell || '—'
+        };
+
+        var key = [item['День'],item['Дата'],item['Пара'],item['Время'],item['Группа'],item['Предмет'],item['Кабинет'],item['Преподаватель']].join('|');
+        if (!seen[key]) { seen[key] = true; results.push(item); }
+      });
+
+      pairNum++;
+      r += 2;
+    }
+  });
+
+  return results;
+}
+
+// ===== Поиск пар по фамилии (аналог parse_teacher_schedule) =====
+function scheduleForTeacher(surname) {
+  var q = norm(surname);
+  if (!q) return [];
+  return allRows.filter(function(r) {
+    var t = norm(r['Преподаватель']);
+    return t.indexOf(q.split(/\s+/)[0]) !== -1;
+  }).sort(function(a,b) {
+    if (DAY_ORDER[a['День']] !== DAY_ORDER[b['День']]) return DAY_ORDER[a['День']] - DAY_ORDER[b['День']];
+    if (a['Дата'] !== b['Дата']) return a['Дата'] < b['Дата'] ? -1 : 1;
+    if (a['Пара'] !== b['Пара']) return a['Пара'] - b['Пара'];
+    return a['Группа'] < b['Группа'] ? -1 : 1;
+  });
+}
+
+// ===== Загрузка =====
+// Данные берутся из публичной Google-таблицы (xlsx, вся книга со всеми листами).
+// ВАЖНО: браузеры (Chrome/Firefox/Edge) блокируют fetch() из страниц,
+// открытых как file://. Страницу нужно отдавать по http:// (локальный сервер).
+function loadSchedule() {
+  var btn = document.getElementById('searchBtn');
+  btn.classList.add('loading');
+
+  var isFile = (window.location && window.location.protocol === 'file:');
+  if (isFile) {
+    showServerHint();
+    btn.classList.remove('loading');
+    return;
+  }
+
+  if (typeof XLSX === 'undefined') {
+    status('Библиотека XLSX не загрузилась. Проверьте интернет-соединение (нужен доступ к CDN).', true);
+    btn.classList.remove('loading');
+    return;
+  }
+
+  fetch(SHEET_URL, { mode: 'cors' })
+    .then(function(resp) {
+      if (!resp.ok) throw new Error('Ошибка загрузки: ' + resp.status);
+      return resp.arrayBuffer();
+    })
+    .then(function(buf) {
+      var wb = XLSX.read(new Uint8Array(buf), { type: 'array', cellDates: true });
+      allRows = [];
+      var seenAll = {};
+
+      wb.SheetNames.forEach(function(name) {
+        // ноутбук пропускает только лист 'Звонки'; листы ЗФО имеют другую структуру и дают мусор
+        if (name.trim() === 'Звонки') return;
+        if (name.indexOf('ЗФО') !== -1) return;
+        var ws = wb.Sheets[name];
+        var data = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: '' });
+        if (!data || data.length < 4) return;
+        var part = buildFullSchedule(data, name);
+        part.forEach(function(r) {
+          var key = [r['День'],r['Дата'],r['Пара'],r['Группа'],r['Предмет'],r['Кабинет'],r['Преподаватель'],r['Курс']].join('|');
+          if (!seenAll[key]) { seenAll[key] = true; allRows.push(r); }
+        });
+      });
+
+      // собрать список всех преподавателей
+      loadedTeachers = [];
+      var seenT = {};
+      allRows.forEach(function(r) {
+        var tn = norm(r['Преподаватель']);
+        if (!tn || tn === '—') return;
+        var surname = (r['Преподаватель']+'').trim().split(/\s+/)[0];
+        if (!seenT[surname.toLowerCase()]) { seenT[surname.toLowerCase()] = true; loadedTeachers.push(surname); }
+      });
+      loadedTeachers.sort(function(a,b){ return a.localeCompare(b, 'ru'); });
+
+      // период
+      var headerPeriod = document.getElementById('headerPeriod');
+      headerPeriod.textContent = 'Расписание занятий';
+
+      var hint = loadedTeachers.map(function(t){
+        return '<button class="tab" data-teacher="' + t + '" onclick="useTeacher(this.dataset.teacher)">' + t + '</button>';
+      }).join('');
+      status('Преподаватели (' + loadedTeachers.length + '): нажмите на фамилию или введите её в поиск. ' + hint, false, true);
+      renderTabs();
+    })
+    .catch(function(err) {
+      status('Не удалось загрузить расписание из Google Таблиц. ' +
+        'Проверьте интернет-соединение и что таблица открыта для просмотра по ссылке.', true);
+      console.error(err);
+    })
+    .finally(function() {
+      btn.classList.remove('loading');
+    });
+}
+
+// Показывает инструкцию, как запустить локальный сервер
+function showServerHint() {
+  document.getElementById('content').innerHTML =
+    '<div class="error-card">'
+    + '<strong>Не удалось загрузить данные.</strong><br><br>'
+    + 'Страница открыта как <code>file://</code>, а браузер блокирует обращение к Google-таблицам из локальных файлов. '
+    + 'Запустите локальный сервер в папке с файлом schedule.html и откройте его через http://<br><br>'
+    + 'В командной строке (PowerShell) в папке проекта выполните:<br>'
+    + '<code>python -m http.server 8000</code><br><br>'
+    + 'Затем откройте в браузере:<br>'
+    + '<code>http://localhost:8000/schedule.html</code>'
+    + '</div>';
+}
+
+
+function status(msg, isError, asHtml) {
+  var el = document.getElementById('status');
+  el.style.display = 'flex';
+  if (isError) {
+    el.style.color = 'var(--error)';
+    el.textContent = msg;
+  } else if (asHtml) {
+    el.style.color = 'var(--text)';
+    el.style.flexWrap = 'wrap';
+    el.innerHTML = msg;
+  } else {
+    el.style.color = 'var(--loading)';
+    el.textContent = msg;
+  }
+}
+
+// ===== Рендер =====
+function roomBadge(room) {
+  var r = (room||'').trim();
+  if (r === 'Дистанционно') return '<span class="badge badge-distant">Дистанционно</span>';
+  if (r === 'Практика') return '<span class="badge badge-practice">Практика</span>';
+  return '<span class="badge badge-room">каб. ' + r + '</span>';
+}
+
+function renderDays(items) {
+  if (!items || !items.length) {
+    return '<div class="empty-state"><div class="icon">&#8212;</div>Нет занятий на эту неделю</div>';
+  }
+  // группировка по дням/датам
+  var byDay = {};
+  items.forEach(function(r) {
+    var key = r['День'] + '|' + r['Дата'];
+    if (!byDay[key]) byDay[key] = [];
+    byDay[key].push(r);
+  });
+  var keys = Object.keys(byDay).sort(function(a,b){
+    var da = a.split('|')[0], db = b.split('|')[0];
+    if (DAY_ORDER[da] !== DAY_ORDER[db]) return DAY_ORDER[da]-DAY_ORDER[db];
+    var aa = a.split('|')[1], bb = b.split('|')[1];
+    if (aa !== bb) return aa < bb ? -1 : 1;
+    return 0;
+  });
+  return keys.map(function(k) {
+    var parts = k.split('|');
+    return '<div class="day-card">'
+      + '<div class="day-header"><span class="dot"></span>' + parts[0] + '<span class="date">' + parts[1] + '</span></div>'
+      + byDay[k].map(function(p) {
+          return '<div class="pair">'
+            + '<div class="pair-num">Пара ' + p['Пара'] + '</div>'
+            + '<div class="pair-info">'
+            + '<div class="pair-subject">' + p['Предмет'] + '</div>'
+            + '<div class="pair-meta">'
+            + (p['Курс'] ? '<span>' + p['Курс'] + '</span>' : '')
+            + '<span>' + p['Группа'] + '</span>'
+            + '</div>'
+            + '</div>'
+            + '<div class="badges">'
+            + '<span class="badge badge-time">' + p['Время'] + '</span>'
+            + roomBadge(p['Кабинет'])
+            + '</div>'
+            + '</div>';
+        }).join('')
+      + '</div>';
+  }).join('');
+}
+
+function renderTabs() {
+  var el = document.getElementById('tabs');
+  el.innerHTML = activeTeachers.map(function(name) {
+    var isDefault = DEFAULT_TEACHERS.indexOf(name) !== -1;
+    var removeBtn = !isDefault
+      ? '<span class="tab-remove" onclick="event.stopPropagation();removeTeacher(this.parentElement.dataset.teacher)">&times;</span>'
+      : '';
+    return '<button class="tab ' + (name === activeTab ? 'active ' : '') + (!isDefault ? 'tab-custom' : '')
+      + '" data-teacher="' + name.replace(/"/g,'&quot;') + '" onclick="selectTab(this.dataset.teacher)">'
+      + name.replace(/"/g,'&quot;') + removeBtn + '</button>';
+  }).join('');
+}
+
+function renderContent() {
+  var el = document.getElementById('content');
+  var items = scheduleForTeacher(activeTab);
+  el.innerHTML = '<div class="teacher-section active">' + renderDays(items) + '</div>';
+}
+
+function selectTab(name) {
+  activeTab = name;
+  renderTabs();
+  renderContent();
+}
+
+function addTeacher() {
+  if (allRows.length === 0) { status('Сначала дождитесь загрузки данных.', true); return; }
+  var input = document.getElementById('searchInput');
+  var name = input.value.trim();
+  if (!name) return;
+  // нормализуем: если подходит существующий преподаватель из списка — используем его фамилию
+  var key = norm(name);
+  var found = null;
+  loadedTeachers.forEach(function(t) {
+    if (!found && norm(t) === key.split(/\s+/)[0]) found = t;
+  });
+  var displayName = found || name;
+
+  if (activeTeachers.indexOf(displayName) === -1) activeTeachers.push(displayName);
+  activeTab = displayName;
+  input.value = '';
+  renderTabs();
+  renderContent();
+}
+
+function useTeacher(name) {
+  if (activeTeachers.indexOf(name) === -1) activeTeachers.push(name);
+  activeTab = name;
+  renderTabs();
+  renderContent();
+}
+
+function removeTeacher(name) {
+  activeTeachers = activeTeachers.filter(function(t){ return t !== name; });
+  if (activeTab === name) {
+    activeTab = activeTeachers.length ? activeTeachers[0] : null;
+  }
+  renderTabs();
+  renderContent();
+}
+
+function toggleTheme() {
+  var html = document.documentElement;
+  var icon = document.querySelector('.theme-icon');
+  if (html.dataset.theme === 'light') {
+    html.dataset.theme = 'dark';
+    icon.innerHTML = '&#9728;';
+  } else {
+    html.dataset.theme = 'light';
+    icon.innerHTML = '&#9790;';
+  }
+}
+
+var DEFAULT_TEACHERS = [];
+
+document.getElementById('searchInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') addTeacher();
+});
+
+DEFAULT_TEACHERS.push('Белоусов');
+activeTeachers.push('Белоусов');
+activeTab = 'Белоусов';
+
+loadSchedule();
+renderTabs();
+</script>
+</body>
+</html>

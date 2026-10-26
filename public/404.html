@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>404 — web/lab</title>
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        background: radial-gradient(ellipse at 20% 0%, #1b1340, transparent 55%),
+          radial-gradient(ellipse at 90% 100%, #07323a, transparent 55%), #06060b;
+        color: #f3f4fb;
+        font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+      }
+      .card {
+        width: min(560px, 100%);
+        padding: 40px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 24px;
+        background: rgba(255, 255, 255, 0.035);
+        box-shadow: 0 40px 90px -40px #000;
+        text-align: center;
+      }
+      .code {
+        font-size: clamp(5rem, 18vw, 9rem);
+        line-height: 0.85;
+        font-weight: 700;
+        letter-spacing: -0.06em;
+        color: transparent;
+        -webkit-text-stroke: 1px rgba(255, 255, 255, 0.35);
+        margin-bottom: 18px;
+      }
+      h1 {
+        margin: 0;
+        font-size: 1.3rem;
+        letter-spacing: -0.02em;
+      }
+      p {
+        margin: 12px 0 24px;
+        color: #a4aabf;
+        line-height: 1.65;
+        font-size: 0.9rem;
+      }
+      a {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 20px;
+        border-radius: 12px;
+        background: linear-gradient(105deg, #8b6bff, #38e0f2 50%, #c4f56a);
+        color: #08080e;
+        font-weight: 700;
+        text-decoration: none;
+      }
+      .hint {
+        margin-top: 18px;
+        font-family: ui-monospace, 'Cascadia Code', monospace;
+        font-size: 0.62rem;
+        color: #737a90;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <div class="code">404</div>
+      <h1>Эта страница улетела в космос</h1>
+      <p>Возможно, ссылка устарела. Все двенадцать приложений ждут на главной.</p>
+      <a href="/web-projects/">Вернуться в web/lab →</a>
+      <div class="hint">web/projects · github pages</div>
+    </main>
+    <script>
+      setTimeout(function () {
+        location.replace('/web-projects/');
+      }, 4000);
+    </script>
+  </body>
+</html>

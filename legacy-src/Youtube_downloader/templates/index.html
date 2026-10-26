@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>YouTube Downloader</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<main class="container">
+  <h1 class="logo"><span class="play"></span>YouTube Downloader</h1>
+
+  <form id="url-form" autocomplete="off">
+    <input id="url" type="url" placeholder="https://www.youtube.com/watch?v=..." required>
+    <button type="submit" id="fetch-btn">Найти</button>
+  </form>
+
+  <div id="alert" class="alert hidden"></div>
+
+  <section id="video-card" class="card hidden">
+    <img id="thumb" alt="">
+    <div class="meta">
+      <h2 id="title"></h2>
+      <p id="channel" class="muted"></p>
+      <p id="stats" class="muted"></p>
+    </div>
+  </section>
+
+  <section id="options" class="hidden">
+    <h3>Видео</h3>
+    <div class="grid" id="quality-grid"></div>
+    <h3>Аудио</h3>
+    <div class="grid" id="audio-grid"></div>
+  </section>
+
+  <section id="progress-panel" class="card hidden">
+    <div class="progress-head"><span id="stage"></span><span id="percent"></span></div>
+    <div class="bar"><div id="fill"></div></div>
+  </section>
+
+  <footer class="muted">Файлы удаляются с сервера автоматически после скачивания.</footer>
+</main>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

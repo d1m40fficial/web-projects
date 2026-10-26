@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Быки и коровы</title>
+  <style>
+    :root { --bg: #f4f5f7; --card: #fff; --ink: #1f2430; --muted: #6b7280; --line: #e5e7eb; --accent: #2563eb; --ok: #16a34a; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background: var(--bg); color: var(--ink); }
+    .wrap { max-width: 560px; margin: 0 auto; padding: 32px 16px; }
+    h1 { font-size: 22px; margin: 0 0 4px; }
+    .sub { color: var(--muted); font-size: 14px; margin: 0 0 20px; }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 20px; }
+    .row { display: flex; gap: 8px; }
+    input { flex: 1; font-size: 18px; letter-spacing: 4px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; }
+    input:focus { outline: 2px solid var(--accent); }
+    button { font-size: 15px; padding: 10px 16px; border: 0; border-radius: 8px; background: var(--accent); color: #fff; cursor: pointer; }
+    button:hover { filter: brightness(1.05); }
+    button.secondary { background: var(--line); color: var(--ink); }
+    .hint { font-size: 13px; color: var(--muted); margin: 8px 2px 0; }
+    table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 14px; }
+    th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+    th { color: var(--muted); font-weight: 600; }
+    .bull { color: var(--ok); font-weight: 600; }
+    .msg { margin-top: 12px; font-size: 14px; }
+    .win { color: var(--ok); font-weight: 600; }
+    .empty { color: var(--muted); font-size: 13px; margin-top: 12px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Быки и коровы</h1>
+    <p class="sub">Угадайте 4 подряд идущие цифры. Компьютер загадывает число, вы пробуете.</p>
+
+    <div class="card">
+      <div class="row">
+        <input id="guess" type="text" inputmode="numeric" maxlength="4" placeholder="4 цифры" autocomplete="off">
+        <button id="submit">Проверить</button>
+      </div>
+      <p class="hint">Бык — цифра стоит на своём месте. Корова — цифра верная, но не на своём месте.</p>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <strong>Ходы: <span id="attempts">0</span></strong>
+        <button id="new" class="secondary">Новая игра</button>
+      </div>
+      <div id="msg" class="msg"></div>
+      <div id="tableWrap"></div>
+      <p id="empty" class="empty">Пока нет ходов. Введите первую догадку.</p>
+    </div>
+  </div>
+
+  <script>
+    const LEN = 4;
+    let secret, attempts, over;
+
+    function newGame() {
+      const digits = shuffle([0,1,2,3,4,5,6,7,8,9]).slice(0, LEN);
+      secret = digits.join('');
+      attempts = 0;
+      over = false;
+      document.getElementById('msg').textContent = '';
+      document.getElementById('attempts').textContent = '0';
+      document.getElementById('empty').style.display = 'block';
+      document.getElementById('tableWrap').innerHTML = '';
+      document.getElementById('guess').value = '';
+      document.getElementById('guess').focus();
+    }
+
+    function shuffle(a) {
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    function score(guess) {
+      let bulls = 0, cows = 0;
+      for (let i = 0; i < LEN; i++) {
+        if (guess[i] === secret[i]) bulls++;
+        else if (secret.includes(guess[i])) cows++;
+      }
+      return { bulls, cows };
+    }
+
+    function render() {
+      document.getElementById('attempts').textContent = attempts;
+      document.getElementById('empty').style.display = 'none';
+    }
+
+    function submit() {
+      if (over) return;
+      const guess = document.getElementById('guess').value;
+      if (!/^\d{4}$/.test(guess)) {
+        document.getElementById('msg').textContent = 'Введите ровно 4 цифры.';
+        return;
+      }
+      if (new Set(guess).size !== LEN) {
+        document.getElementById('msg').textContent = 'Цифры не должны повторяться.';
+        return;
+      }
+      const { bulls, cows } = score(guess);
+      attempts++;
+      render();
+
+      const tr = document.createElement('tr');
+      const td1 = document.createElement('td'); td1.textContent = attempts;
+      const td2 = document.createElement('td'); td2.textContent = guess;
+      const td3 = document.createElement('td');
+      td3.innerHTML = '<span class="bull">' + bulls + ' б</span> · ' + cows + ' к';
+      tr.appendChild(td1); tr.appendChild(td2); tr.appendChild(td3);
+
+      let table = document.querySelector('#tableWrap table');
+      if (!table) {
+        table = document.createElement('table');
+        table.innerHTML = '<thead><tr><th>№</th><th>Ваш ход</th><th>Результат</th></tr></thead><tbody></tbody>';
+        document.getElementById('tableWrap').appendChild(table);
+      }
+      table.querySelector('tbody').appendChild(tr);
+      document.getElementById('guess').value = '';
+
+      const msg = document.getElementById('msg');
+      if (bulls === LEN) {
+        over = true;
+        msg.innerHTML = '<span class="win">Победа!</span> Вы угадали число за ' + attempts + ' ходов.';
+      } else {
+        msg.innerHTML = 'Быков: ' + bulls + ', коров: ' + cows;
+      }
+    }
+
+    document.getElementById('submit').addEventListener('click', submit);
+    document.getElementById('guess').addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
+    document.getElementById('new').addEventListener('click', newGame);
+
+    newGame();
+  </script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>Raft Survival &mdash; fan recreation</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #15110c; overflow: hidden; }
+  body { display: flex; align-items: center; justify-content: center; font-family: Georgia, "Times New Roman", serif; }
+  #game { display: block; background: #8fd0d2; border-radius: 8px; box-shadow: 0 14px 48px rgba(0,0,0,.65); }
+  #touch { position: fixed; left: 0; right: 0; bottom: 0; display: none; justify-content: space-between; padding: 16px; box-sizing: border-box; pointer-events: none; }
+  #touch button { pointer-events: auto; width: 92px; height: 92px; border-radius: 50%; border: 3px solid #3b2a1e; background: rgba(246,237,220,.86); color: #3b2a1e; font-size: 34px; font-weight: 700; font-family: Georgia, serif; }
+  #touch button:active { transform: scale(.94); background: rgba(231,200,135,.95); }
+  body.touch-on #touch { display: flex; }
+</style>
+</head>
+<body>
+<canvas id="game" width="1280" height="720"></canvas>
+<div id="touch">
+  <button id="btnLeft" aria-label="left">&#9664;</button>
+  <button id="btnJump" aria-label="jump">&#9650;</button>
+  <button id="btnRight" aria-label="right">&#9654;</button>
+</div>
+<script src="game.js"></script>
+</body>
+</html>

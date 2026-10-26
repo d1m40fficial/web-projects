@@ -1,0 +1,39 @@
+{
+  "name": "web-projects-lab",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "A living playground of 12 interactive web apps — TypeScript, Canvas, Web APIs, zero backend.",
+  "homepage": "https://d1m40fficial.github.io/web-projects/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/d1m40fficial/web-projects.git"
+  },
+  "author": "d1m40fficial",
+  "license": "MIT",
+  "keywords": [
+    "typescript",
+    "canvas",
+    "web-apps",
+    "portfolio",
+    "vanilla-js",
+    "github-pages"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@fontsource-variable/jetbrains-mono": "^5.2.8",
+    "@fontsource-variable/manrope": "^5.2.8",
+    "@fontsource-variable/unbounded": "^5.2.8",
+    "qrcode": "^1.5.4"
+  },
+  "devDependencies": {
+    "@types/qrcode": "^1.5.5",
+    "typescript": "^5.9.0",
+    "vite": "^7.1.0"
+  }
+}

@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Таймер</title>
+<style>
+  :root {
+    --bg: #0d0d0f;
+    --panel: #17171b;
+    --text: #f2f2f5;
+    --muted: #6b6b76;
+    --accent: #4ade80;
+    --danger: #f87171;
+    --border: #26262c;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+  }
+  .app {
+    width: min(520px, 94vw);
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 24px 24px 28px;
+    text-align: center;
+  }
+  .tabs {
+    display: flex;
+    gap: 8px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 4px;
+    margin-bottom: 22px;
+  }
+  .tab {
+    flex: 1;
+    border: none;
+    background: none;
+    color: var(--muted);
+    font-size: 15px;
+    font-weight: 600;
+    padding: 9px 0;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: color .15s, background .15s;
+  }
+  .tab.active {
+    background: var(--accent);
+    color: #0a0a0a;
+  }
+  .clock {
+    font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+    font-variant-numeric: tabular-nums;
+    font-size: clamp(56px, 16vw, 108px);
+    font-weight: 700;
+    letter-spacing: -2px;
+    line-height: 1.1;
+    margin: 6px 0 4px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .clock.done { color: var(--danger); animation: blink 1s steps(1) infinite; }
+  .clock.running { color: var(--accent); }
+  @keyframes blink { 50% { opacity: .3; } }
+  .label {
+    color: var(--muted);
+    font-size: 13px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 22px;
+  }
+  .presets {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+  }
+  .preset {
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    padding: 8px 16px;
+    border-radius: 999px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: border-color .15s;
+  }
+  .preset:hover { border-color: var(--accent); }
+  .preset.on { border-color: var(--accent); color: var(--accent); }
+  .custom {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 18px;
+  }
+  .custom input {
+    width: 80px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-size: 20px;
+    text-align: center;
+    padding: 8px;
+    font-variant-numeric: tabular-nums;
+  }
+  .custom input:focus { outline: none; border-color: var(--accent); }
+  .controls {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+  }
+  button.btn {
+    border: none;
+    border-radius: 999px;
+    padding: 14px 0;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform .1s, opacity .15s;
+  }
+  button.btn:active { transform: scale(.96); }
+  .btn-main {
+    flex: 1.4;
+    background: var(--accent);
+    color: #0a0a0a;
+  }
+  .btn-main.paused { background: var(--danger); }
+  .btn-secondary {
+    flex: 1;
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  button:disabled { opacity: .35; cursor: default; }
+  .hint {
+    margin-top: 18px;
+    color: var(--muted);
+    font-size: 12.5px;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="tabs">
+    <button class="tab active" data-mode="countdown">Таймер</button>
+    <button class="tab" data-mode="stopwatch">Секундомер</button>
+  </div>
+
+  <div class="clock" id="clock" title="Клик по времени — сброс (секундомер)">0:00</div>
+  <div class="label" id="label">Подготовка</div>
+
+  <div class="presets" id="presets">
+    <button class="preset" data-min="1">1 мин</button>
+    <button class="preset" data-min="3">3 мин</button>
+    <button class="preset" data-min="5">5 мин</button>
+    <button class="preset" data-min="10">10 мин</button>
+    <button class="preset" data-min="15">15 мин</button>
+  </div>
+  <div class="custom" id="customRow">
+    <input type="number" id="minInput" min="0" max="999" value="5" title="Минуты">:
+    <input type="number" id="secInput" min="0" max="59" value="0" title="Секунды">
+  </div>
+
+  <div class="controls">
+    <button class="btn btn-main" id="mainBtn">Старт</button>
+    <button class="btn btn-secondary" id="resetBtn">Сброс</button>
+  </div>
+  <div class="hint" id="hint">Секундомер: клик по времени — запуск/пауза. Клик ещё раз — сброс.</div>
+</div>
+
+<script>
+(function () {
+  var mode = 'countdown';
+
+  // независимое состояние для каждого режима — при переключении не теряется
+  var states = {
+    countdown: { remaining: 0, totalMs: 0, running: false, finished: false },
+    stopwatch: { acc: 0, running: false, finished: false }
+  };
+
+  var endTime = 0;   // таймер: момент окончания (при паузе вычисляется остаток)
+  var startRef = 0;  // секундомер: момент старта текущего запуска
+  var raf = null;
+
+  function st() { return states[mode]; }
+
+  var $ = function (id) { return document.getElementById(id); };
+  var clockEl = $('clock'), labelEl = $('label'), mainBtn = $('mainBtn'),
+      resetBtn = $('resetBtn'), hintEl = $('hint'), presetsEl = $('presets'),
+      customRow = $('customRow'), minInput = $('minInput'), secInput = $('secInput');
+
+  function fmt(ms, isStop) {
+    ms = Math.max(0, Math.floor(ms));
+    var h = Math.floor(ms / 3600000);
+    var m = Math.floor((ms % 3600000) / 60000);
+    var s = Math.floor((ms % 60000) / 1000);
+    if (isStop && h === 0) {
+      return m + ':' + String(s).padStart(2, '0') + '.' + String(Math.floor((ms % 1000) / 10)).padStart(2, '0');
+    }
+    if (h > 0) return h + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+    return m + ':' + String(s).padStart(2, '0');
+  }
+
+  function render(ms) {
+    clockEl.textContent = fmt(ms, mode === 'stopwatch');
+    clockEl.classList.toggle('running', st().running && !st().finished);
+    clockEl.classList.toggle('done', st().finished);
+  }
+
+  function tick() {
+    var s = st();
+    if (mode === 'stopwatch') {
+      var v = s.running ? s.acc + (performance.now() - startRef) : s.acc;
+      render(v);
+      if (s.running) raf = requestAnimationFrame(tick);
+    } else {
+      var left = endTime - performance.now();
+      if (left <= 0) {
+        render(0);
+        finish();
+        return;
+      }
+      render(left);
+      if (s.running) raf = requestAnimationFrame(tick);
+    }
+  }
+
+  function syncUI() {
+    var s = st();
+    var stop = mode === 'stopwatch';
+    presetsEl.style.display = stop ? 'none' : 'flex';
+    customRow.style.display = stop ? 'none' : 'flex';
+    mainBtn.textContent = s.running ? 'Пауза' : (s.finished ? 'Заново' : 'Старт');
+    mainBtn.classList.toggle('paused', s.running && !stop);
+    resetBtn.disabled = !s.running && !s.finished && (stop ? s.acc === 0 : s.remaining === 0);
+    labelEl.textContent = stop
+      ? (s.running ? 'Идёт отсчёт' : (s.acc > 0 ? 'На паузе' : 'Секундомер'))
+      : (s.finished ? 'Время вышло' : (s.running ? 'Идёт отсчёт' : 'Настроен'));
+  }
+
+  function start() {
+    var s = st();
+    if (mode === 'stopwatch') {
+      if (s.finished) { s.acc = 0; s.finished = false; }
+      startRef = performance.now();
+      s.running = true;
+    } else {
+      if (s.finished || s.remaining <= 0) {
+        var t = readPresetOrCustom();
+        if (t <= 0) { beep(); return; }
+        s.totalMs = t;
+        s.remaining = t;
+        s.finished = false;
+      }
+      endTime = performance.now() + s.remaining;
+      s.running = true;
+    }
+    syncUI();
+    tick();
+  }
+
+  function pause() {
+    var s = st();
+    if (s.running && mode === 'stopwatch') s.acc += performance.now() - startRef;
+    if (s.running && mode === 'countdown') s.remaining = Math.max(0, endTime - performance.now());
+    s.running = false;
+    cancelAnimationFrame(raf);
+    render(mode === 'stopwatch' ? s.acc : s.remaining);
+    syncUI();
+  }
+
+  function reset() {
+    var s = st();
+    cancelAnimationFrame(raf);
+    s.running = false;
+    s.finished = false;
+    if (mode === 'stopwatch') { s.acc = 0; }
+    else { s.remaining = 0; s.totalMs = 0; }
+    render(mode === 'stopwatch' ? s.acc : s.remaining);
+    syncUI();
+  }
+
+  function finish() {
+    var s = st();
+    s.running = false;
+    s.finished = true;
+    cancelAnimationFrame(raf);
+    render(0);
+    syncUI();
+    beep();
+  }
+
+  function switchMode(next) {
+    if (next === mode) return;
+    if (st().running) pause(); // зафиксировать уходящий режим, не сбрасывая
+    mode = next;
+    document.querySelectorAll('.tab').forEach(function (x) {
+      x.classList.toggle('active', x.dataset.mode === mode);
+    });
+    var s = st();
+    render(mode === 'stopwatch' ? s.acc : s.remaining);
+    syncUI();
+  }
+
+  function beep() {
+    try {
+      var ctx = new (window.AudioContext || window.webkitAudioContext)();
+      var o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = 'square'; o.frequency.value = 880;
+      g.gain.value = 0.15;
+      o.connect(g); g.connect(ctx.destination);
+      o.start();
+      setTimeout(function () { o.stop(); }, 300);
+    } catch (e) {}
+  }
+
+  function readPresetOrCustom() {
+    var active = presetsEl.querySelector('.preset.on');
+    if (active) return parseInt(active.dataset.min, 10) * 60000;
+    var m = Math.max(0, parseInt(minInput.value, 10) || 0);
+    var s = Math.max(0, parseInt(secInput.value, 10) || 0);
+    return m * 60000 + s * 1000;
+  }
+
+  // клик по времени: в секундомере запуск/пауза; на паузе — сброс
+  clockEl.addEventListener('click', function () {
+    if (mode !== 'stopwatch') return;
+    var s = st();
+    if (s.finished) { s.acc = 0; s.finished = false; render(0); syncUI(); return; }
+    if (!s.running) {
+      if (s.acc === 0) start();
+      else { s.acc = 0; render(0); syncUI(); }
+    } else pause();
+  });
+
+  mainBtn.addEventListener('click', function () {
+    var s = st();
+    if (s.running) pause();
+    else if (s.finished) { reset(); start(); }
+    else start();
+  });
+
+  resetBtn.addEventListener('click', reset);
+
+  document.querySelectorAll('.tab').forEach(function (t) {
+    t.addEventListener('click', function () { switchMode(t.dataset.mode); });
+  });
+
+  presetsEl.querySelectorAll('.preset').forEach(function (p) {
+    p.addEventListener('click', function () {
+      presetsEl.querySelectorAll('.preset').forEach(function (x) { x.classList.remove('on'); });
+      p.classList.add('on');
+      if (mode === 'countdown') {
+        var s = st();
+        s.totalMs = parseInt(p.dataset.min, 10) * 60000;
+        s.remaining = s.totalMs;
+        render(s.remaining);
+        syncUI();
+      }
+    });
+  });
+
+  [minInput, secInput].forEach(function (inp) {
+    inp.addEventListener('input', function () {
+      if (mode === 'countdown') {
+        presetsEl.querySelectorAll('.preset').forEach(function (x) { x.classList.remove('on'); });
+        var s = st();
+        s.totalMs = readPresetOrCustom();
+        s.remaining = s.totalMs;
+        render(s.remaining);
+        syncUI();
+      }
+    });
+  });
+
+  reset();
+})();
+</script>
+</body>
+</html>
