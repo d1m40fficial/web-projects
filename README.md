@@ -123,7 +123,7 @@ flowchart LR
 ```text
 web-projects/
 ├─ src/
-│  ├─ apps/            # 11 приложений (по папке на приложение)
+│  ├─ apps/            # 12 приложений (по папке на приложение)
 │  ├─ core/            # router, dom, motion, scene, toast, modal, confetti
 │  ├─ components/      # nav, footer, command palette, превью карточек
 │  ├─ pages/           # home, about, archive, app shell
