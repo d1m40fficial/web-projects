@@ -1,4 +1,4 @@
-import{l,R as n,i as a,o as p,b as t}from"./index-BQvo4zIQ.js";import{m as o}from"./gallery-CWnHFi_N.js";/* empty css             */import"./modal-24NozuoC.js";function b(e){const c=l.filter(i=>i.playable).length;e.innerHTML=`
+import{l,R as n,i as a,o as p,b as t}from"./index-LoDKI_Kl.js";import{m as o}from"./gallery-CVc6EVnd.js";/* empty css             */import"./modal-n_ebLaj_.js";function b(e){const c=l.filter(i=>i.playable).length;e.innerHTML=`
     <section class="archive-page">
       <div class="wrap">
         <nav class="crumbs" aria-label="Хлебные крошки">

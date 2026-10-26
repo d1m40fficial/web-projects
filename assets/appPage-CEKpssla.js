@@ -1,4 +1,4 @@
-import{p as n,R as o,i as r,o as g,b as h,e as u}from"./index-BQvo4zIQ.js";/* empty css             */const v={tools:"инструменты",games:"игры",data:"данные",experiments:"эксперименты"};async function m(p,a){const c=n.findIndex(s=>s.slug===a.slug),t=n[(c-1+n.length)%n.length],l=n[(c+1)%n.length];p.innerHTML=`
+import{p as n,R as o,i as r,o as g,b as h,e as u}from"./index-LoDKI_Kl.js";/* empty css             */const $={tools:"инструменты",games:"игры",data:"данные",experiments:"эксперименты"};async function m(p,a){const c=n.findIndex(s=>s.slug===a.slug),t=n[(c-1+n.length)%n.length],l=n[(c+1)%n.length];p.innerHTML=`
     <section class="app-page" style="--ac1:${a.c1};--ac2:${a.c2}">
       <div class="wrap">
         <nav class="crumbs" aria-label="Хлебные крошки">
@@ -12,12 +12,12 @@ import{p as n,R as o,i as r,o as g,b as h,e as u}from"./index-BQvo4zIQ.js";/* em
         <header class="app-head">
           <div class="app-head__icon">${r(a.icon)}</div>
           <div class="app-head__text">
-            <span class="eyebrow">приложение ${a.index} · ${v[a.category]}</span>
+            <span class="eyebrow">приложение ${a.index} · ${$[a.category]}</span>
             <h1 class="app-title">${a.title}</h1>
             <p class="app-lead">${a.description}</p>
             <div class="app-head__tags">
               ${a.tags.map(s=>`<span class="tag">${s}</span>`).join("")}
-              <a class="tag tag--link" href="${o}/tree/main/src/apps/${a.slug}" target="_blank" rel="noopener">
+              <a class="tag tag--link" href="${o}/tree/main/${a.sourcePath??`src/apps/${a.slug}`}" target="_blank" rel="noopener">
                 ${r("github")} исходники
               </a>
             </div>

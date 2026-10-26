@@ -1,4 +1,4 @@
-import{w as l,i as r}from"./index-BQvo4zIQ.js";function m(a,s="info",c=2800,e){const n=document.getElementById("toasts");if(!n)return;const t=l(`
+import{w as l,i as r}from"./index-LoDKI_Kl.js";function m(a,s="info",c=2800,e){const n=document.getElementById("toasts");if(!n)return;const t=l(`
     <div class="toast toast--${s}">
       <span class="toast__icon">${r(s==="success"?"check":s==="error"?"warning":"sparkles")}</span>
       <span class="toast__text">${a}</span>
