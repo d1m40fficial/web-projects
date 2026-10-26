@@ -142,7 +142,7 @@ function heroMarkup(): string {
       <div class="wrap hero__stats">
         <div class="stat reveal"><b><span data-count="12">0</span></b><span>интерактивных приложений</span></div>
         <div class="stat reveal"><b><span data-count="9">0</span></b><span>играбельных архивов</span></div>
-        <div class="stat reveal"><b><span data-count="0">0</span></b><span>строк серверного кода</span></div>
+        <div class="stat reveal"><b><span data-count="0">0</span></b><span>бэкенда в работе</span></div>
         <div class="stat reveal"><b><span data-count="100" data-suffix="%">0</span></b><span>работает в браузере</span></div>
       </div>
     </section>

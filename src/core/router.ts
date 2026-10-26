@@ -76,6 +76,9 @@ export function startRouter(opts: RouterOptions): void {
     cleanup = result;
     opts.view.classList.remove('is-swapping');
     opts.view.removeAttribute('aria-busy');
+    opts.view.style.animation = 'none';
+    void opts.view.offsetWidth;
+    opts.view.style.animation = '';
     document.title = `${route.title} — web/lab`;
     opts.onChange?.(path);
     window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
