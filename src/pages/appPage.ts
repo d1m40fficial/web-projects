@@ -37,7 +37,7 @@ export async function renderProjectPage(view: HTMLElement, project: Project): Pr
             <p class="app-lead">${project.description}</p>
             <div class="app-head__tags">
               ${project.tags.map((t) => `<span class="tag">${t}</span>`).join('')}
-              <a class="tag tag--link" href="${REPO_URL}/tree/main/src/apps/${project.slug}" target="_blank" rel="noopener">
+              <a class="tag tag--link" href="${REPO_URL}/tree/main/${project.sourcePath ?? `src/apps/${project.slug}`}" target="_blank" rel="noopener">
                 ${icon('github')} исходники
               </a>
             </div>

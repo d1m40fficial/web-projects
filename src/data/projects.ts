@@ -15,6 +15,7 @@ export interface Project {
   c2: string;
   preview: string;
   layout?: 'wide' | 'full';
+  sourcePath?: string;
   notes: { title: string; text: string }[];
   load: () => Promise<{ mount: (root: HTMLElement) => Cleanup | void }>;
 }
@@ -141,6 +142,7 @@ export const projects: Project[] = [
     c1: '#ffcb5c',
     c2: '#ff6aa8',
     preview: '2048',
+    sourcePath: 'src/apps/game2048',
     notes: [
       { title: 'Плитки с идентичностью', text: 'Каждая плитка — объект с id, поэтому DOM переиспользуется и переходы не «прыгают».' },
       { title: 'Слияние без багов', text: 'За ход каждая плитка сливается не более одного раза — классическое правило 2048.' },

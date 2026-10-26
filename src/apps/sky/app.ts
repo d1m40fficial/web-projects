@@ -1,4 +1,4 @@
-﻿import { $, clamp, debounce, store } from '../../core/dom';
+﻿import { $, clamp, debounce, escapeHtml, store } from '../../core/dom';
 import { icon } from '../../core/icons';
 import { toast } from '../../core/toast';
 import { constellations, starById, starColor, stars, type Star } from '../../data/stars';
@@ -731,7 +731,7 @@ export function mount(root: HTMLElement): () => void {
         (p, i) => `
         <button class="wx-result" type="button" data-city="${i}">
           <span class="wx-result__flag"><span class="wx-flag mono">${(p.country_code || '--').toUpperCase()}</span></span>
-          <span class="wx-result__text"><b>${p.name}</b><small>${[p.admin1, p.country].filter(Boolean).join(', ')}</small></span>
+          <span class="wx-result__text"><b>${escapeHtml(p.name)}</b><small>${escapeHtml([p.admin1, p.country].filter(Boolean).join(', '))}</small></span>
           <span class="wx-result__coords mono">${p.latitude.toFixed(1)}, ${p.longitude.toFixed(1)}</span>
         </button>`,
       )
