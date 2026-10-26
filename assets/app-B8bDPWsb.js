@@ -1,4 +1,4 @@
-import{i as x,$ as c,s as K,r as ke,j as ue}from"./index-DniStlWq.js";import{t as fe}from"./toast-Cp26I_ly.js";const a=4,ge="wl.2048.state.v1",Te="wl.2048.best.v1";function Xe(i){i.innerHTML=`
+import{i as x,$ as c,s as K,r as ke,j as ue}from"./index-CAISWKLD.js";import{t as fe}from"./toast-CWZ3PrsP.js";const a=4,ge="wl.2048.state.v1",Te="wl.2048.best.v1";function Xe(i){i.innerHTML=`
     <div class="g2048">
       <div class="g2048__stage">
         <div class="g2048__board" id="g-board" role="grid" aria-label="Игровое поле 2048">
