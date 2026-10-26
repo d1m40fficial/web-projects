@@ -185,12 +185,12 @@ export function mount(root: HTMLElement): () => void {
         </div>
       </div>
 
-      <div id="wx-body"></div>
-      <div class="wx-demo" id="wx-demo" hidden>
+      <div class="wx-demo" id="wx-demo-banner" hidden>
         ${icon('info')}
         <span>Показаны <b>демо-данные</b>: Open-Meteo недоступен из этой сети. Логика интерфейса настоящая, цифры — сгенерированные.</span>
         <button class="wx-demo__retry" type="button" id="wx-demo-retry">Повторить</button>
       </div>
+      <div id="wx-body"></div>
     </div>
   `;
 
@@ -215,12 +215,12 @@ export function mount(root: HTMLElement): () => void {
         <p>${escapeHtml(message)}</p>
         <div class="wx-error__actions">
           <button class="btn btn--primary" type="button" id="wx-retry">${icon('refresh')} Попробовать снова</button>
-          <button class="btn btn--ghost" type="button" id="wx-demo">Москва</button>
+          <button class="btn btn--ghost" type="button" id="wx-demo-city">Москва</button>
         </div>
         <small>Источник: Open-Meteo. Проверьте соединение или попробуйте позже.</small>
       </div>`;
     $('#wx-retry', root)?.addEventListener('click', () => void load(place));
-    $('#wx-demo', root)?.addEventListener('click', () => {
+    $('#wx-demo-city', root)?.addEventListener('click', () => {
       place = DEFAULT_PLACE;
       void load(place);
     });
@@ -234,7 +234,7 @@ export function mount(root: HTMLElement): () => void {
 
   const render = () => {
     if (!data) return;
-    const demoBanner = $('#wx-demo', root);
+    const demoBanner = $('#wx-demo-banner', root);
     if (demoBanner) demoBanner.hidden = !demoMode;
     const cur = data.current;
     const day = data.daily;
