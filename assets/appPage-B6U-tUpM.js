@@ -1,4 +1,4 @@
-import{p as n,R as o,i as r,o as g,b as h,e as u}from"./index-CiBUsTd2.js";/* empty css             */const v={tools:"инструменты",games:"игры",data:"данные",experiments:"эксперименты"};async function m(p,a){const c=n.findIndex(s=>s.slug===a.slug),t=n[(c-1+n.length)%n.length],l=n[(c+1)%n.length];p.innerHTML=`
+import{p as n,R as o,i as r,o as g,b as h,e as u}from"./index-CyVuHTgF.js";/* empty css             */const v={tools:"инструменты",games:"игры",data:"данные",experiments:"эксперименты"};async function m(p,a){const c=n.findIndex(s=>s.slug===a.slug),t=n[(c-1+n.length)%n.length],l=n[(c+1)%n.length];p.innerHTML=`
     <section class="app-page" style="--ac1:${a.c1};--ac2:${a.c2}">
       <div class="wrap">
         <nav class="crumbs" aria-label="Хлебные крошки">
