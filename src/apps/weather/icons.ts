@@ -1,4 +1,4 @@
-export type WeatherGroup = 'clear' | 'partly' | 'cloudy' | 'fog' | 'drizzle' | 'rain' | 'snow' | 'storm';
+﻿export type WeatherGroup = 'clear' | 'partly' | 'cloudy' | 'fog' | 'drizzle' | 'rain' | 'snow' | 'storm';
 
 export function weatherGroup(code: number): WeatherGroup {
   if (code === 0 || code === 1) return 'clear';
@@ -46,12 +46,15 @@ export function weatherLabel(code: number): string {
   return labels[code] ?? 'Облачно';
 }
 
+let iconSeq = 0;
+
 export function weatherIcon(code: number, isDay = true, extraClass = ''): string {
   const group = weatherGroup(code);
+  const uid = ++iconSeq;
   const sun =
     group === 'clear' || group === 'partly'
       ? isDay
-        ? `<g class="wi__sun"><circle cx="25" cy="24" r="8" fill="url(#wi-sun)"/>${Array.from({ length: 8 }, (_, i) => {
+        ? `<g class="wi__sun"><circle cx="25" cy="24" r="8" fill="url(#wi-sun-${uid})"/>${Array.from({ length: 8 }, (_, i) => {
             const a = (i / 8) * Math.PI * 2;
             const x1 = 25 + Math.cos(a) * 12;
             const y1 = 24 + Math.sin(a) * 12;
@@ -65,7 +68,7 @@ export function weatherIcon(code: number, isDay = true, extraClass = ''): string
   const cloud =
     group === 'clear'
       ? ''
-      : `<path class="wi__cloud" d="M19 44h27a8 8 0 0 0 .8-16 11.5 11.5 0 0 0-22-2.6A9 9 0 0 0 19 44Z" fill="url(#wi-cloud)" stroke="rgba(255,255,255,.28)" stroke-width="1"/>`;
+      : `<path class="wi__cloud" d="M19 44h27a8 8 0 0 0 .8-16 11.5 11.5 0 0 0-22-2.6A9 9 0 0 0 19 44Z" fill="url(#wi-cloud-${uid})" stroke="rgba(255,255,255,.28)" stroke-width="1"/>`;
 
   const rain =
     group === 'rain' || group === 'drizzle'
@@ -113,10 +116,10 @@ export function weatherIcon(code: number, isDay = true, extraClass = ''): string
     <span class="wi ${extraClass}" data-group="${group}" aria-hidden="true">
       <svg viewBox="0 0 64 64" fill="none">
         <defs>
-          <radialGradient id="wi-sun" cx="35%" cy="30%" r="70%">
+          <radialGradient id="wi-sun-${uid}" cx="35%" cy="30%" r="70%">
             <stop offset="0" stop-color="#fff6d8"/><stop offset=".55" stop-color="#ffcb5c"/><stop offset="1" stop-color="#ff9d4d"/>
           </radialGradient>
-          <linearGradient id="wi-cloud" x1="0" y1="0" x2="0" y2="1">
+          <linearGradient id="wi-cloud-${uid}" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0" stop-color="#f4f7ff"/><stop offset="1" stop-color="#b9c6e6"/>
           </linearGradient>
         </defs>
@@ -126,3 +129,4 @@ export function weatherIcon(code: number, isDay = true, extraClass = ''): string
       </svg>
     </span>`;
 }
+
