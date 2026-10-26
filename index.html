@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="ru" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#07070c" />
+    <title>web/lab — интерактивная витрина веб-проектов</title>
+    <meta
+      name="description"
+      content="web/lab — живая витрина из 12 интерактивных веб-приложений: карта звёздного неба, погода, 2048, QR-коды, треки, палитры и дашборд. TypeScript, Canvas, Web APIs, ноль бэкенда."
+    />
+    <meta name="author" content="d1m40fficial" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="web/lab — 12 интерактивных веб-приложений" />
+    <meta
+      property="og:description"
+      content="Карта звёздного неба, погода, 2048, QR-коды, визуализатор треков, генератор палитр и дашборд рейтингов — в одном репозитории."
+    />
+    <meta property="og:url" content="https://d1m40fficial.github.io/web-projects/" />
+    <meta property="og:image" content="https://d1m40fficial.github.io/web-projects/og-cover.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <link rel="apple-touch-icon" href="./favicon.svg" />
+    <script>
+      (() => {
+        try {
+          const saved = localStorage.getItem('wl.theme');
+          document.documentElement.dataset.theme = saved || 'dark';
+        } catch (e) {
+          document.documentElement.dataset.theme = 'dark';
+        }
+      })();
+    </script>
+    <script type="module" crossorigin src="/web-projects/assets/index-CiBUsTd2.js"></script>
+    <link rel="stylesheet" crossorigin href="/web-projects/assets/index-C2igRkYw.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#view">К содержимому</a>
+
+    <div class="scene" aria-hidden="true">
+      <div class="scene__grid"></div>
+      <div class="scene__orb scene__orb--a"></div>
+      <div class="scene__orb scene__orb--b"></div>
+      <div class="scene__orb scene__orb--c"></div>
+      <canvas id="scene-stars"></canvas>
+      <div class="scene__vignette"></div>
+      <div class="scene__grain"></div>
+    </div>
+
+    <div class="scroll-progress" aria-hidden="true"><span id="scroll-progress-bar"></span></div>
+    <div class="cursor-glow" id="cursor-glow" aria-hidden="true"></div>
+
+    <div id="boot" class="boot">
+      <div class="boot__mark">
+        <span class="boot__dot"></span><span class="boot__dot"></span><span class="boot__dot"></span>
+      </div>
+      <p class="boot__label">инициализация вселенной</p>
+      <div class="boot__bar"><span></span></div>
+    </div>
+
+    <header id="nav" class="nav"></header>
+    <main id="view" class="view" tabindex="-1"></main>
+    <footer id="footer" class="footer"></footer>
+
+    <div id="toasts" class="toasts" role="status" aria-live="polite"></div>
+    <div id="modal-root"></div>
+
+    <noscript>
+      <p style="padding: 2rem; color: #fff">Для работы витрины нужен JavaScript.</p>
+    </noscript>
+  </body>
+</html>

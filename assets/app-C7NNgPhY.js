@@ -1,0 +1,42 @@
+import{i as x,$ as c,s as K,r as ke,j as ue}from"./index-CiBUsTd2.js";import{t as fe}from"./toast-DmgqR8ld.js";const a=4,ge="wl.2048.state.v1",Te="wl.2048.best.v1";function Xe(i){i.innerHTML=`
+    <div class="g2048">
+      <div class="g2048__stage">
+        <div class="g2048__board" id="g-board" role="grid" aria-label="Игровое поле 2048">
+          <div class="g2048__grid" aria-hidden="true">
+            ${Array.from({length:16},()=>"<span></span>").join("")}
+          </div>
+          <div class="g2048__tiles" id="g-tiles"></div>
+          <div class="g2048__overlay" id="g-overlay" hidden>
+            <span class="g2048__overlay-label" id="g-overlay-label">Игра окончена</span>
+            <strong id="g-overlay-score">0</strong>
+            <span class="g2048__overlay-sub" id="g-overlay-sub">очков</span>
+            <div class="g2048__overlay-actions">
+              <button class="btn btn--primary" type="button" id="g-again">${x("refresh")} Ещё раз</button>
+              <button class="btn" type="button" id="g-continue" hidden>${x("arrow")} Продолжить</button>
+            </div>
+          </div>
+        </div>
+        <p class="g2048__hint">
+          ${x("keyboard")} стрелки / WASD · ${x("mouse")} свайп по полю
+        </p>
+      </div>
+
+      <aside class="g2048__side">
+        <div class="g2048__scores">
+          <div class="g2048__score"><span>очки</span><b id="g-score" aria-live="polite">0</b></div>
+          <div class="g2048__score g2048__score--best"><span>рекорд</span><b id="g-best">0</b></div>
+        </div>
+        <div class="g2048__actions">
+          <button class="btn btn--primary" type="button" id="g-new">${x("plus")} Новая игра</button>
+          <button class="btn btn--ghost" type="button" id="g-undo" disabled>${x("undo")} Отменить</button>
+        </div>
+        <div class="g2048__rules">
+          <span class="eyebrow">правила</span>
+          <p>Стрелки двигают все плитки. Две одинаковые сливаются в одну, удваиваясь. Цель — <b>2048</b>, но игра продолжается и дальше.</p>
+        </div>
+        <div class="g2048__legend">
+          ${[2,4,8,16,32,64,128,256,512,1024,2048].map(e=>`<span class="g2048__swatch tile--v${e}">${e}</span>`).join("")}
+        </div>
+      </aside>
+    </div>
+  `;const f=c("#g-board",i),pe=c("#g-tiles",i),ve=c("#g-score",i),O=c("#g-best",i),Y=c("#g-undo",i),z=c("#g-overlay",i),me=c("#g-overlay-label",i),be=c("#g-overlay-score",i),ye=c("#g-overlay-sub",i),U=c("#g-again",i),W=c("#g-continue",i),he=K(ge,null),Z=K(Te,0);let r=[],d=0,A=Z.get()||0,g=!1,y=!1,p=!1,M=!1,J=1,h=[],v=80,C=10,k=10;const u=new Map,$=new Set,S=(e,t)=>{const s=window.setTimeout(()=>{$.delete(s),e()},t);$.add(s)},we=e=>e>2048?"super":String(e),Q=()=>{const e=f.clientWidth;if(e){k=Math.round(e*.024),C=Math.round(e*.024),v=(e-k*2-C*(a-1))/a,f.style.setProperty("--pad",`${k}px`),f.style.setProperty("--gap",`${C}px`),f.style.setProperty("--cell",`${v}px`);for(const t of r){const s=u.get(t.id);s&&D(s,t.r,t.c)}for(const[t,s]of u)if(!r.find(w=>w.id===t)){const w=Number(s.dataset.r??0),P=Number(s.dataset.c??0);D(s,w,P)}}},D=(e,t,s)=>{e.style.width=`${v}px`,e.style.height=`${v}px`,e.style.transform=`translate3d(${k+s*(v+C)}px, ${k+t*(v+C)}px, 0)`,e.style.borderRadius=`${Math.max(6,v*.13)}px`},_e=e=>{let t=u.get(e.id);t||(t=document.createElement("div"),t.className="tile",t.dataset.id=String(e.id),t.dataset.r=String(e.r),t.dataset.c=String(e.c),t.setAttribute("role","gridcell"),pe.appendChild(t),u.set(e.id,t));const s=String(e.value).length;return t.textContent=String(e.value),t.className=`tile tile--v${we(e.value)}${s>=4?" tile--small":""}`,t.dataset.r=String(e.r),t.dataset.c=String(e.c),t.style.zIndex=String(2+e.r*a+e.c),t.style.fontSize=`${Math.round(v*(s>=4?.27:s===3?.33:.41))}px`,D(t,e.r,e.c),t},q=()=>{ve.textContent=String(d),d>A&&(A=d,Z.set(A)),O.textContent=String(A)},xe=()=>{const e=new Set(r.map(s=>`${s.r}:${s.c}`)),t=[];for(let s=0;s<a;s++)for(let o=0;o<a;o++)e.has(`${s}:${o}`)||t.push({r:s,c:o});return t},T=()=>{const e=xe();if(!e.length)return null;const{r:t,c:s}=e[ke(0,e.length-1)],o={id:J++,value:Math.random()<.9?2:4,r:t,c:s};return r.push(o),o},L=e=>{for(const t of r){const s=_e(t);t.id===e&&(s.classList.add("is-new"),S(()=>s.classList.remove("is-new"),260))}q()},$e=()=>({tiles:r.map(e=>({...e})),score:d}),V=()=>{if(r.length<a*a)return!0;const e=Array.from({length:a},()=>Array(a).fill(null));for(const t of r)e[t.r][t.c]=t;for(let t=0;t<a;t++)for(let s=0;s<a;s++){const o=e[t][s]?.value;if(s+1<a&&e[t][s+1]?.value===o||t+1<a&&e[t+1][s]?.value===o)return!0}return!1},m=()=>{K(ge,{tiles:r,score:d,won:g,keepPlaying:y}).set({tiles:r.map(e=>({...e})),score:d,won:g,keepPlaying:y})},N=e=>{p=e==="over",z.hidden=!1,me.textContent=e==="win"?"Плитка 2048 собрана":"Ходов больше нет",be.textContent=String(d),ye.textContent=e==="win"?"победа":"очков",W.hidden=e!=="win",U.innerHTML=`${x("refresh")} ${e==="win"?"Заново":"Ещё раз"}`},G=()=>{z.hidden=!0},Se=()=>{if(r.some(e=>e.value>=2048)&&!g){g=!0,m(),ue()||z.animate([{opacity:0},{opacity:1}],{duration:250}),N("win");return}V()||(p=!0,m(),N("over"))},Le=()=>{if(!h.length||M)return;const e=h.pop();r=e.tiles,d=e.score,g=!1,p=!1,y=!1,G();for(const[t,s]of u)r.some(o=>o.id===t)||(s.remove(),u.delete(t));L(),Y.disabled=h.length===0,m(),fe("Ход отменён","success")},ee=e=>{if(M||p||!z.hidden)return;const t=$e(),s=Array.from({length:a},()=>Array(a).fill(null));for(const n of r)s[n.r][n.c]=n;const o=new Set,w=[];let P=!1,j=0;const Ce={up:[-1,0],down:[1,0],left:[0,-1],right:[0,1]},[ae,ie]=Ce[e],le=[...Array(a).keys()],ce=[...Array(a).keys()];ae>0&&le.reverse(),ie>0&&ce.reverse();for(const n of le)for(const l of ce){const E=s[n][l];if(!E)continue;let X=n,B=l,de=!1;for(;;){const I=X+ae,R=B+ie;if(I<0||I>=a||R<0||R>=a)break;const _=s[I][R];if(!_){X=I,B=R;continue}if(_.value===E.value&&!o.has(_.id)){_.value*=2,o.add(_.id),j+=_.value,w.push({tile:E,toR:I,toC:R}),s[n][l]=null,P=!0,de=!0;const F=u.get(_.id);F&&(F.classList.remove("is-merged"),S(()=>{F.classList.add("is-merged"),S(()=>F.classList.remove("is-merged"),260)},120))}break}de||(X!==n||B!==l)&&(s[n][l]=null,s[X][B]=E,E.r=X,E.c=B,P=!0)}if(!P){f.animate([{transform:"translateX(0)"},{transform:"translateX(-5px)"},{transform:"translateX(5px)"},{transform:"translateX(0)"}],{duration:180,easing:"ease-in-out"});return}h.push(t),h.length>12&&h.shift(),Y.disabled=!1;for(const n of w){const l=u.get(n.tile.id);l&&(l.style.zIndex="1",l.classList.add("is-absorbed"),D(l,n.toR,n.toC),S(()=>{l.remove(),u.delete(n.tile.id)},170))}if(r=r.filter(n=>!w.some(l=>l.tile.id===n.id)),d+=j,M=!0,L(),m(),j>0){const n=document.createElement("span");n.className="score-pop",n.textContent=`+${j}`,i.querySelector(".g2048__score")?.appendChild(n),S(()=>n.remove(),700)}ue(),S(()=>{const n=T();L(n?.id),M=!1,Se(),m()},140)},te=()=>{for(const e of $)window.clearTimeout(e);$.clear();for(const[,e]of u)e.remove();u.clear(),r=[],d=0,g=!1,y=!1,p=!1,M=!1,h=[],Y.disabled=!0,G(),T(),T(),L(),m(),q(),fe("Новая игра","success")},Ee=()=>{y=!0,G(),p=!1,m()};c("#g-new",i)?.addEventListener("click",te),Y.addEventListener("click",Le),U.addEventListener("click",te),W.addEventListener("click",Ee);const se=e=>{if(e.target.matches("input, textarea, select"))return;const s={ArrowUp:"up",ArrowDown:"down",ArrowLeft:"left",ArrowRight:"right",w:"up",s:"down",a:"left",d:"right",ц:"up",ы:"down",ф:"left",в:"right"},o=s[e.key]??s[e.key.toLowerCase()];o&&(e.preventDefault(),ee(o))};window.addEventListener("keydown",se);let ne=0,re=0,H=!1;const Ae=e=>{H=!0,ne=e.clientX,re=e.clientY,f.setPointerCapture(e.pointerId)},Me=e=>{if(!H)return;H=!1;const t=e.clientX-ne,s=e.clientY-re;Math.max(Math.abs(t),Math.abs(s))<24||ee(Math.abs(t)>Math.abs(s)?t>0?"right":"left":s>0?"down":"up")};f.addEventListener("pointerdown",Ae),f.addEventListener("pointerup",Me),f.addEventListener("pointercancel",()=>{H=!1});const oe=new ResizeObserver(()=>Q());oe.observe(f);const b=he.get();return O.textContent=String(A),b&&Array.isArray(b.tiles)&&b.tiles.length&&b.tiles.every(e=>Number.isFinite(e.r)&&Number.isFinite(e.c))?(r=b.tiles.map(e=>({...e})),d=b.score??0,g=!!b.won,y=!!b.keepPlaying,J=Math.max(0,...r.map(e=>e.id))+1,L(),setTimeout(()=>{p?N("over"):r.every(e=>e.value<2048)&&!V()?(p=!0,N("over")):g&&!y&&N("win")},60)):(T(),T(),L(),m()),q(),requestAnimationFrame(Q),()=>{window.removeEventListener("keydown",se),oe.disconnect();for(const e of $)window.clearTimeout(e);$.clear()}}export{Xe as mount};

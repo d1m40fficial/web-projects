@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>SUPER SPACE CLUB // WEB</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='10' fill='%2322e0ff'/></svg>">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<div id="hud" class="hidden">
+  <div id="hud-left"><span class="hud-label">КОРПУС</span><div id="hud-hull"></div></div>
+  <div id="hud-center"><div id="hud-score">0</div><div id="hud-mult"></div></div>
+  <div id="hud-right"><span class="hud-label">ЗВЁЗДЫ</span><div id="hud-credits">0</div></div>
+</div>
+
+<div id="screen-menu" class="screen">
+  <h1>SUPER <span>SPACE</span> CLUB</h1>
+  <div class="subtitle">веб-клуб ленивых космических рейнджеров</div>
+  <div class="menu-stats">
+    <div><span class="stat-num" id="menu-best">0</span><span class="stat-label">рекорд</span></div>
+    <div><span class="stat-num" id="menu-bank">0</span><span class="stat-label">звёзд в банке</span></div>
+    <div><span class="stat-num" id="menu-runs">0</span><span class="stat-label">полётов</span></div>
+  </div>
+  <button class="btn btn-primary" id="btn-start" disabled>В ПОЛЁТ</button>
+  <button class="btn" id="btn-shop">АНГАР ⚙</button>
+  <div class="hint">мышь / WASD / стрелки — манёвры · пушка бьёт сама · P — пауза · M — звук</div>
+  <div class="save-line">прогресс: <span id="save-mode">…</span></div>
+</div>
+
+<div id="screen-shop" class="screen hidden">
+  <h2>АНГАР</h2>
+  <div class="bank">★ <span id="shop-bank">0</span></div>
+  <div id="shop-list"></div>
+  <button class="btn" id="btn-shop-back">НАЗАД</button>
+</div>
+
+<div id="screen-over" class="screen hidden">
+  <h2>КОРАБЛЬ ПОТЕРЯН</h2>
+  <div id="over-newbest" class="newbest hidden">НОВЫЙ РЕКОРД!</div>
+  <div class="over-grid">
+    <div><span class="stat-num" id="over-score">0</span><span class="stat-label">очки</span></div>
+    <div><span class="stat-num" id="over-stars">0</span><span class="stat-label">звёзды собраны</span></div>
+    <div><span class="stat-num" id="over-best">0</span><span class="stat-label">рекорд</span></div>
+  </div>
+  <button class="btn btn-primary" id="btn-retry">ЕЩЁ РАЗ</button>
+  <button class="btn" id="btn-over-shop">АНГАР ⚙</button>
+  <button class="btn btn-ghost" id="btn-menu">МЕНЮ</button>
+</div>
+
+<div id="screen-pause" class="screen hidden">
+  <h2>ПАУЗА</h2>
+  <button class="btn btn-primary" id="btn-resume">ПРОДОЛЖИТЬ</button>
+  <button class="btn btn-ghost" id="btn-quit">СДАТЬСЯ</button>
+</div>
+
+<button id="btn-mute" title="звук (M)">♪</button>
+
+<script src="game.js"></script>
+</body>
+</html>

@@ -1,0 +1,27 @@
+RAFT SURVIVAL — fan recreation
+==============================
+
+Concept
+-------
+Inspired only by the idea of the "Pirate Raft" bonus level from the iOS
+version of Home Sheep Home 2 (2012), which promoted the film "The Pirates!
+Band of Misfits". The original game is no longer available.
+
+No art, audio, code, characters or other assets from Aardman, the Home Sheep
+Home series, or "The Pirates!" were copied or reused.
+
+Assets
+------
+All visuals are drawn procedurally at runtime with the HTML Canvas 2D API
+(sky, clouds, volcano island, water, pirate ships, raft, the sheep, cannon
+effects, particles, HUD). There are no image files.
+
+All sound effects are synthesised at runtime with the Web Audio API
+(oscillators and generated noise). There are no audio files.
+
+Therefore there are no third-party asset licences to satisfy. The code in this
+folder (index.html, game.js, play.bat) is a fan work and may be modified freely
+for personal, non-commercial use. Do not market it as an official Aardman or
+"The Pirates!" product, and do not use it to imply endorsement.
+
+Original idea credited to: Home Sheep Home 2 (Aardman / Chillingo), 2012.
