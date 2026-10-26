@@ -1,4 +1,4 @@
-import{w as b,i as _}from"./index-CyVuHTgF.js";let a=null;function y(){a?.close()}function g(e){y();const s=document.getElementById("modal-root");if(!s)throw new Error("modal root missing");const m=document.activeElement,t=b(`
+import{w as b,i as _}from"./index-BQvo4zIQ.js";let a=null;function y(){a?.close()}function g(e){y();const s=document.getElementById("modal-root");if(!s)throw new Error("modal root missing");const m=document.activeElement,t=b(`
     <div class="modal" role="dialog" aria-modal="true" aria-label="${v(e.title)}">
       <div class="modal__dialog ${e.wide?"modal__dialog--wide":""}">
         <div class="modal__head">
