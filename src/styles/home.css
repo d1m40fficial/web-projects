@@ -1791,6 +1791,9 @@
   .stage {
     transform: none;
   }
+  .stage__glow {
+    inset: -10% 0;
+  }
 }
 
 @media (max-width: 520px) {
