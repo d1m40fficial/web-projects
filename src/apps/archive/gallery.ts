@@ -18,7 +18,25 @@ function play(project: LegacyProject): void {
       <button class="btn btn--sm" type="button" data-close-modal>Закрыть · Esc</button>
     `,
   });
-  dialog.body.querySelector('iframe')?.focus();
+  const iframe = dialog.body.querySelector('iframe');
+  iframe?.focus();
+
+  // Escape pressed while the game iframe owns focus should still close the modal.
+  const bindEscape = () => {
+    try {
+      iframe?.contentWindow?.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          dialog.close();
+        }
+      });
+    } catch {
+      /* cross-origin iframe — the close button still works */
+    }
+  };
+  iframe?.addEventListener('load', bindEscape);
+  bindEscape();
+
   dialog.root.querySelector('[data-close-modal]')?.addEventListener('click', () => dialog.close());
 }
 
