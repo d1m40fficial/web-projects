@@ -155,7 +155,7 @@ function marqueeMarkup(): string {
     'Canvas 2D',
     'Web Crypto',
     'localStorage',
-    'Open-Meteo API',
+    'Gismeteo feed',
     'SVG charts',
     'CSS 3D',
     'Vite',

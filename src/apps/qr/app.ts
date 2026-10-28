@@ -258,6 +258,10 @@ export function mount(root: HTMLElement): () => void {
       } as const;
 
       await QRCode.toCanvas(canvas, payload, options);
+      // qrcode writes pixel width/height as inline styles; let the stylesheet
+      // decide the display size while keeping the 1024px backing store crisp.
+      canvas.style.removeProperty('width');
+      canvas.style.removeProperty('height');
       stage.classList.remove('is-empty');
       canvas.style.opacity = '1';
       const qr = QRCode.create(payload, { errorCorrectionLevel: state.ecc });

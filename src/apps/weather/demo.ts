@@ -1,4 +1,4 @@
-import type { Forecast } from './app';
+import type { Forecast } from './types';
 
 /** Deterministic pseudo-random generator so demo data stays stable per city/day. */
 function hashString(value: string): number {
@@ -55,7 +55,7 @@ function timeOfDay(hours: number): string {
 
 /**
  * Offline demo forecast. This is *not* real weather — the UI marks it clearly.
- * It is used when Open-Meteo is unreachable (offline preview, restricted networks).
+ * It is used when both weather providers are unreachable (offline preview, restricted networks).
  */
 export function demoForecast(place: { name: string; latitude: number; longitude: number; timezone?: string }): Forecast {
   const now = nowInZone(place.timezone);

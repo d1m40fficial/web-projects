@@ -4,6 +4,7 @@ import { toast } from '../../core/toast';
 import { constellations, starById, starColor, stars, type Star } from '../../data/stars';
 import {
   formatLocal,
+  formatTime,
   formatUT,
   fromZonedInput,
   galacticToEquatorial,
@@ -11,6 +12,7 @@ import {
   localSiderealTime,
   moonPhase,
   moonPosition,
+  planetPositions,
   sunPosition,
   toZonedInput,
   type Equatorial,
@@ -52,6 +54,7 @@ const FALLBACK: SkyPlace[] = [
 ];
 
 const CONSTELLATION_NAMES = new Map(constellations.map((c) => [c.id, c.name]));
+const DEG = Math.PI / 180;
 const placeStore = store<SkyPlace>('wl.sky.place.v1', DEFAULT_PLACE);
 
 // Pre-compute the Milky Way band once: galactic plane → equatorial coordinates.
@@ -80,7 +83,9 @@ interface Projected {
 export function mount(root: HTMLElement): () => void {
   let place = placeStore.get() ?? DEFAULT_PLACE;
   let timestamp = Date.now();
-  let camAz = place.latitude >= 0 ? 180 : 0;
+  let view: 'panorama' | 'dome' = 'panorama';
+  let camAz = place.latitude >= 0 ? 0 : 180;
+  let camAlt = 32;
   let zoom = 1;
   let playing = false;
   let speed = 600;
@@ -112,16 +117,24 @@ export function mount(root: HTMLElement): () => void {
             <option value="3600">×3600</option>
           </select>
         </div>
+        <div class="segmented sky-view" role="group" aria-label="Проекция неба">
+          <button type="button" data-view="panorama" class="is-active">панорама</button>
+          <button type="button" data-view="dome">купол</button>
+        </div>
         <button class="btn btn--sm btn--icon" type="button" id="sky-reset" title="Сбросить вид (двойной клик)">${icon('refresh')}</button>
       </div>
 
-      <div class="sky-stage" id="sky-stage">
+      <div class="sky-stage is-panorama" id="sky-stage">
         <canvas id="sky-canvas" aria-label="Интерактивная карта звёздного неба"></canvas>
 
         <div class="sky-hud sky-hud--tl">
           <div class="sky-place">
             <span class="wx-flag mono">${(place.country_code || '--').toUpperCase()}</span>
             <b id="sky-place-name">${place.name}</b>
+          </div>
+          <div class="sky-clock">
+            <b id="sky-clock-time">—</b>
+            <span id="sky-clock-date">—</span>
           </div>
           <div class="sky-hud__sub">
             <span id="sky-local">—</span>
@@ -176,16 +189,22 @@ export function mount(root: HTMLElement): () => void {
   let horizonRadius = 200;
   let centerX = 0;
   let centerY = 0;
+  let panoramaF = 400;
+  let panCenter: [number, number, number] = [0, 0, 1];
+  let panRight: [number, number, number] = [1, 0, 0];
+  let panUp: [number, number, number] = [0, 1, 0];
   let projected: { star: Star; x: number; y: number }[] = [];
   let lastFrame = performance.now();
   let raf = 0;
   let disposed = false;
-  let hudTick = 0;
+
+  const defaultAz = () => (view === 'panorama' ? (place.latitude >= 0 ? 0 : 180) : place.latitude >= 0 ? 180 : 0);
 
   const applyPlace = (p: SkyPlace, silent = false) => {
     place = p;
     placeStore.set(p);
-    camAz = p.latitude >= 0 ? 180 : 0;
+    camAz = defaultAz();
+    camAlt = 32;
     $('#sky-place-name', root)!.textContent = p.name;
     $('#sky-coords', root)!.textContent = `${p.latitude.toFixed(2)}°, ${p.longitude.toFixed(2)}°`;
     const flag = root.querySelector('.sky-place .wx-flag');
@@ -218,6 +237,18 @@ export function mount(root: HTMLElement): () => void {
     lastHud = now;
     const local = $('#sky-local', root);
     if (local) local.textContent = formatLocal(timestamp, place.timezone);
+    const clockTime = $('#sky-clock-time', root);
+    if (clockTime) clockTime.textContent = formatTime(timestamp, place.timezone);
+    const clockDate = $('#sky-clock-date', root);
+    if (clockDate) {
+      const label = new Intl.DateTimeFormat('ru-RU', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        timeZone: place.timezone,
+      }).format(new Date(timestamp));
+      clockDate.textContent = label.charAt(0).toUpperCase() + label.slice(1);
+    }
     const visible = $('#sky-visible', root);
     if (visible) visible.textContent = String(visibleCount);
     const sun = $('#sky-sun', root);
@@ -234,7 +265,60 @@ export function mount(root: HTMLElement): () => void {
     if (document.activeElement !== datetime) datetime.value = toZonedInput(timestamp, place.timezone);
   };
 
+  const prepareProjection = () => {
+    centerX = width / 2;
+    centerY = height / 2;
+    if (view !== 'panorama') {
+      horizonRadius = Math.min(width, height) * 0.465 * zoom;
+      return;
+    }
+    const a0 = camAlt * DEG;
+    const z0 = camAz * DEG;
+    const cx = Math.cos(a0) * Math.sin(z0);
+    const cy = Math.sin(a0);
+    const cz = Math.cos(a0) * Math.cos(z0);
+    panCenter = [cx, cy, cz];
+    // Camera "right" axis: world up × centre, i.e. roughly east.
+    const rn = Math.hypot(cz, cx) || 1;
+    panRight = [cz / rn, 0, -cx / rn];
+    // Camera "up" axis: centre × right.
+    panUp = [cy * panRight[2], cz * panRight[0] - cx * panRight[2], -cy * panRight[0]];
+    // A stereographic-style panorama: the focal length is wide enough to fill
+    // the whole width with the visible hemisphere (±90°), so the horizon never
+    // folds back over itself at the edges.
+    panoramaF = Math.max(height * 0.8, width * 0.5) * zoom;
+  };
+
+  /** Is this direction in front of the panorama camera? */
+  const facing = (alt: number, az: number): boolean => {
+    if (view !== 'panorama') return true;
+    const a = alt * DEG;
+    const z = az * DEG;
+    const vx = Math.cos(a) * Math.sin(z);
+    const vy = Math.sin(a);
+    const vz = Math.cos(a) * Math.cos(z);
+    return vx * panCenter[0] + vy * panCenter[1] + vz * panCenter[2] > 0.04;
+  };
+
   const project = (alt: number, az: number): Projected => {
+    if (view === 'panorama') {
+      const a = alt * DEG;
+      const z = az * DEG;
+      const vx = Math.cos(a) * Math.sin(z);
+      const vy = Math.sin(a);
+      const vz = Math.cos(a) * Math.cos(z);
+      const forward = vx * panCenter[0] + vy * panCenter[1] + vz * panCenter[2];
+      const right = vx * panRight[0] + vy * panRight[1] + vz * panRight[2];
+      const up = vx * panUp[0] + vy * panUp[1] + vz * panUp[2];
+      const k = 1 / (1 + forward + 1e-4);
+      return {
+        x: centerX + panoramaF * right * k,
+        y: centerY - panoramaF * up * k,
+        visible: alt >= 0,
+        alt,
+        az,
+      };
+    }
     const r = ((90 - alt) / 90) * horizonRadius;
     const a = (az - camAz) * (Math.PI / 180);
     return {
@@ -259,65 +343,148 @@ export function mount(root: HTMLElement): () => void {
 
     const day = sunH.alt > 0;
     const twilight = sunH.alt > -12 && sunH.alt <= 0;
+    const planets = planetPositions(timestamp);
 
-    horizonRadius = Math.min(width, height) * 0.465 * zoom;
-    centerX = width / 2;
-    centerY = height / 2;
+    prepareProjection();
 
-    // ----- background / sky dome -----
+    // ----- background -----
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, width, height);
-    const ground = ctx.createLinearGradient(0, 0, 0, height);
-    ground.addColorStop(0, '#05050b');
-    ground.addColorStop(1, '#080812');
-    ctx.fillStyle = ground;
-    ctx.fillRect(0, 0, width, height);
 
     const zenithColor = day ? '#245184' : twilight ? '#080714' : '#020208';
+    const midColor = day ? '#3f6e9c' : twilight ? '#141029' : '#06060f';
     const horizonColor = day ? '#7ba6c8' : twilight ? '#2a1738' : '#0b0e22';
-    const skyGrad = ctx.createRadialGradient(centerX, centerY, horizonRadius * 0.05, centerX, centerY, horizonRadius);
-    skyGrad.addColorStop(0, zenithColor);
-    skyGrad.addColorStop(0.72, day ? '#3f6e9c' : twilight ? '#141029' : '#06060f');
-    skyGrad.addColorStop(1, horizonColor);
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, horizonRadius, 0, Math.PI * 2);
-    ctx.fillStyle = skyGrad;
-    ctx.fill();
+    let skyClip: Path2D | null = null;
+
+    if (view === 'panorama') {
+      const ground = ctx.createLinearGradient(0, height * 0.5, 0, height);
+      ground.addColorStop(0, day ? '#22313a' : twilight ? '#120e1a' : '#07070f');
+      ground.addColorStop(1, day ? '#0a1115' : '#03030a');
+      ctx.fillStyle = ground;
+      ctx.fillRect(0, 0, width, height);
+
+      const horizon: { x: number; y: number }[] = [];
+      for (let offset = -90; offset <= 90; offset += 1) {
+        const point = project(0, camAz + offset);
+        if (Number.isFinite(point.x) && Number.isFinite(point.y) && point.x > -width && point.x < width * 2) {
+          horizon.push(point);
+        }
+      }
+
+      if (horizon.length > 1) {
+        const sky = new Path2D();
+        const first = horizon[0];
+        const last = horizon[horizon.length - 1];
+        sky.moveTo(first.x, first.y);
+        for (let i = 1; i < horizon.length; i++) sky.lineTo(horizon[i].x, horizon[i].y);
+        sky.lineTo(last.x, -30);
+        sky.lineTo(first.x, -30);
+        sky.closePath();
+
+        const gradient = ctx.createLinearGradient(0, 0, 0, height);
+        gradient.addColorStop(0, zenithColor);
+        gradient.addColorStop(0.68, midColor);
+        gradient.addColorStop(1, horizonColor);
+        ctx.fillStyle = gradient;
+        ctx.fill(sky);
+        skyClip = sky;
+
+        // Distant landscape silhouette along the horizon.
+        const bump = (x: number) => {
+          const t = x / Math.max(1, width);
+          return 5 + 6 * Math.sin(t * 9 + camAz * 0.06) + 3.5 * Math.sin(t * 27 + 1.4) + (Math.sin(t * 71 + 0.4) > 0.86 ? 6 : 0);
+        };
+        const land = new Path2D();
+        land.moveTo(first.x, first.y + bump(first.x));
+        for (let i = 1; i < horizon.length; i++) {
+          land.lineTo(horizon[i].x, horizon[i].y + bump(horizon[i].x));
+        }
+        land.lineTo(last.x, height + 10);
+        land.lineTo(first.x, height + 10);
+        land.closePath();
+        ctx.fillStyle = day ? 'rgba(14,23,27,0.97)' : twilight ? 'rgba(7,5,13,0.97)' : 'rgba(3,3,8,0.97)';
+        ctx.fill(land);
+
+        ctx.strokeStyle = day ? 'rgba(255,255,255,0.22)' : twilight ? 'rgba(255,150,120,0.22)' : 'rgba(130,150,235,0.18)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(first.x, first.y);
+        for (let i = 1; i < horizon.length; i++) ctx.lineTo(horizon[i].x, horizon[i].y);
+        ctx.stroke();
+      } else {
+        const gradient = ctx.createLinearGradient(0, 0, 0, height);
+        gradient.addColorStop(0, zenithColor);
+        gradient.addColorStop(0.68, midColor);
+        gradient.addColorStop(1, horizonColor);
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, width, height);
+      }
+    } else {
+      const ground = ctx.createLinearGradient(0, 0, 0, height);
+      ground.addColorStop(0, '#05050b');
+      ground.addColorStop(1, '#080812');
+      ctx.fillStyle = ground;
+      ctx.fillRect(0, 0, width, height);
+
+      const skyGrad = ctx.createRadialGradient(centerX, centerY, horizonRadius * 0.05, centerX, centerY, horizonRadius);
+      skyGrad.addColorStop(0, zenithColor);
+      skyGrad.addColorStop(0.72, midColor);
+      skyGrad.addColorStop(1, horizonColor);
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, horizonRadius, 0, Math.PI * 2);
+      ctx.fillStyle = skyGrad;
+      ctx.fill();
+    }
 
     if (twilight) {
       const sunPoint = project(sunH.alt, sunH.az);
-      const glow = ctx.createRadialGradient(sunPoint.x, sunPoint.y, 0, sunPoint.x, sunPoint.y, horizonRadius * 0.7);
+      const radius = view === 'panorama' ? Math.max(width, height) * 0.6 : horizonRadius * 0.7;
+      const glow = ctx.createRadialGradient(sunPoint.x, sunPoint.y, 0, sunPoint.x, sunPoint.y, radius);
       glow.addColorStop(0, 'rgba(255,140,90,0.3)');
       glow.addColorStop(0.4, 'rgba(255,100,130,0.1)');
       glow.addColorStop(1, 'rgba(255,90,80,0)');
       ctx.save();
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, horizonRadius, 0, Math.PI * 2);
-      ctx.clip();
+      if (skyClip) {
+        ctx.clip(skyClip);
+      } else {
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, horizonRadius, 0, Math.PI * 2);
+        ctx.clip();
+      }
       ctx.fillStyle = glow;
       ctx.fillRect(0, 0, width, height);
       ctx.restore();
     }
 
     // ----- atmosphere vignette -----
-    const vign = ctx.createRadialGradient(centerX, centerY, horizonRadius * 0.55, centerX, centerY, horizonRadius * 1.02);
-    vign.addColorStop(0, 'rgba(0,0,0,0)');
-    vign.addColorStop(1, 'rgba(0,0,0,0.4)');
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, horizonRadius, 0, Math.PI * 2);
-    ctx.fillStyle = vign;
-    ctx.fill();
+    if (view === 'panorama') {
+      const vign = ctx.createRadialGradient(centerX, height * 0.42, 0, centerX, height * 0.42, Math.max(width, height) * 0.72);
+      vign.addColorStop(0, 'rgba(0,0,0,0)');
+      vign.addColorStop(1, 'rgba(0,0,0,0.38)');
+      ctx.fillStyle = vign;
+      ctx.fillRect(0, 0, width, height);
+    } else {
+      const vign = ctx.createRadialGradient(centerX, centerY, horizonRadius * 0.55, centerX, centerY, horizonRadius * 1.02);
+      vign.addColorStop(0, 'rgba(0,0,0,0)');
+      vign.addColorStop(1, 'rgba(0,0,0,0.4)');
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, horizonRadius, 0, Math.PI * 2);
+      ctx.fillStyle = vign;
+      ctx.fill();
+    }
 
     // ----- Milky Way -----
     if (showMilky && !day) {
       ctx.save();
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, horizonRadius, 0, Math.PI * 2);
-      ctx.clip();
+      if (view !== 'panorama') {
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, horizonRadius, 0, Math.PI * 2);
+        ctx.clip();
+      }
       ctx.globalCompositeOperation = 'lighter';
       for (const point of MILKY_WAY) {
         const h = horizontal(point.ra, point.dec, place.latitude, lst);
-        if (h.alt < 0) continue;
+        if (h.alt < 0 || !facing(h.alt, h.az)) continue;
         const p = project(h.alt, h.az);
         const alpha = 0.07 + Math.min(0.12, Math.max(0, (h.alt / 90) * 0.1));
         ctx.globalAlpha = alpha;
@@ -331,32 +498,78 @@ export function mount(root: HTMLElement): () => void {
     }
 
     // ----- grid -----
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, horizonRadius, 0, Math.PI * 2);
-    ctx.clip();
-    ctx.strokeStyle = day ? 'rgba(10,30,60,0.12)' : 'rgba(160,180,255,0.07)';
-    ctx.lineWidth = 1;
-    for (const alt of [30, 60]) {
+    if (view === 'panorama') {
+      ctx.strokeStyle = day ? 'rgba(10,30,60,0.1)' : 'rgba(160,180,255,0.06)';
+      ctx.lineWidth = 1;
+      for (const alt of [30, 60]) {
+        let previous: Projected | null = null;
+        for (let az = 0; az <= 360; az += 2) {
+          const p = project(alt, az);
+          const ok = facing(alt, az) && p.x > -width && p.x < width * 2 && p.y > -height && p.y < height * 2;
+          if (ok && previous) {
+            ctx.beginPath();
+            ctx.moveTo(previous.x, previous.y);
+            ctx.lineTo(p.x, p.y);
+            ctx.stroke();
+          }
+          previous = ok ? p : null;
+        }
+      }
+      ctx.strokeStyle = day ? 'rgba(10,30,60,0.07)' : 'rgba(160,180,255,0.045)';
+      for (let az = 0; az < 360; az += 30) {
+        let previous: Projected | null = null;
+        for (let alt = 0; alt <= 90; alt += 3) {
+          const p = project(alt, az);
+          const ok = facing(alt, az) && p.x > -width && p.x < width * 2 && p.y > -height && p.y < height * 2;
+          if (ok && previous) {
+            ctx.beginPath();
+            ctx.moveTo(previous.x, previous.y);
+            ctx.lineTo(p.x, p.y);
+            ctx.stroke();
+          }
+          previous = ok ? p : null;
+        }
+      }
+    } else {
+      ctx.save();
       ctx.beginPath();
-      ctx.arc(centerX, centerY, ((90 - alt) / 90) * horizonRadius, 0, Math.PI * 2);
-      ctx.stroke();
+      ctx.arc(centerX, centerY, horizonRadius, 0, Math.PI * 2);
+      ctx.clip();
+      ctx.strokeStyle = day ? 'rgba(10,30,60,0.12)' : 'rgba(160,180,255,0.07)';
+      ctx.lineWidth = 1;
+      for (const alt of [30, 60]) {
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, ((90 - alt) / 90) * horizonRadius, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      for (let az = 0; az < 360; az += 45) {
+        const angle = (az - camAz) * (Math.PI / 180);
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.lineTo(centerX + horizonRadius * Math.sin(angle), centerY - horizonRadius * Math.cos(angle));
+        ctx.strokeStyle = day ? 'rgba(10,30,60,0.08)' : 'rgba(160,180,255,0.045)';
+        ctx.stroke();
+      }
+      ctx.restore();
     }
-    for (let az = 0; az < 360; az += 45) {
-      const outer = project(0, az);
-      const angle = (az - camAz) * (Math.PI / 180);
-      ctx.beginPath();
-      ctx.moveTo(centerX, centerY);
-      ctx.lineTo(centerX + horizonRadius * Math.sin(angle), centerY - horizonRadius * Math.cos(angle));
-      ctx.strokeStyle = day ? 'rgba(10,30,60,0.08)' : 'rgba(160,180,255,0.045)';
-      ctx.stroke();
-      void outer;
-    }
-    ctx.restore();
 
     // ----- constellation lines -----
-    const lineColor = day ? 'rgba(20,30,60,0.35)' : 'rgba(155,128,255,0.55)';
-    const labelColor = day ? 'rgba(10,20,40,0.55)' : 'rgba(210,218,255,0.7)';
+    const lineColor =
+      view === 'panorama'
+        ? day
+          ? 'rgba(20,30,60,0.28)'
+          : 'rgba(168,178,205,0.34)'
+        : day
+          ? 'rgba(20,30,60,0.35)'
+          : 'rgba(155,128,255,0.55)';
+    const labelColor =
+      view === 'panorama'
+        ? day
+          ? 'rgba(6,28,50,0.72)'
+          : 'rgba(214,188,140,0.6)'
+        : day
+          ? 'rgba(10,20,40,0.55)'
+          : 'rgba(210,218,255,0.7)';
 
     if (showLines) {
       ctx.strokeStyle = lineColor;
@@ -368,7 +581,7 @@ export function mount(root: HTMLElement): () => void {
           if (!a || !b) continue;
           const ha = horizontal(a.ra, a.dec, place.latitude, lst);
           const hb = horizontal(b.ra, b.dec, place.latitude, lst);
-          if (ha.alt < 0 || hb.alt < 0) continue;
+          if (ha.alt < 0 || hb.alt < 0 || !facing(ha.alt, ha.az) || !facing(hb.alt, hb.az)) continue;
           const pa = project(ha.alt, ha.az);
           const pb = project(hb.alt, hb.az);
           ctx.globalAlpha = clamp(Math.min(ha.alt, hb.alt) / 18, 0.18, 1);
@@ -382,7 +595,7 @@ export function mount(root: HTMLElement): () => void {
     }
 
     if (showLines) {
-      ctx.font = '600 10px "JetBrains Mono Variable", monospace';
+      ctx.font = view === 'panorama' ? '600 11px "Manrope Variable", sans-serif' : '600 10px "JetBrains Mono Variable", monospace';
       ctx.textAlign = 'center';
       ctx.fillStyle = labelColor;
       for (const constellation of constellations) {
@@ -390,13 +603,13 @@ export function mount(root: HTMLElement): () => void {
           .map((id) => starById.get(id))
           .filter((s): s is Star => Boolean(s))
           .map((s) => horizontal(s.ra, s.dec, place.latitude, lst))
-          .filter((h) => h.alt > 8)
+          .filter((h) => h.alt > 8 && facing(h.alt, h.az))
           .map((h) => project(h.alt, h.az));
         if (points.length < 2) continue;
         const x = points.reduce((acc, p) => acc + p.x, 0) / points.length;
         const y = points.reduce((acc, p) => acc + p.y, 0) / points.length;
-        ctx.globalAlpha = 0.72;
-        ctx.fillText(constellation.name.toUpperCase(), x, y - 6);
+        ctx.globalAlpha = view === 'panorama' ? 0.85 : 0.72;
+        ctx.fillText(view === 'panorama' ? constellation.name : constellation.name.toUpperCase(), x, y - 6);
       }
       ctx.globalAlpha = 1;
     }
@@ -408,7 +621,7 @@ export function mount(root: HTMLElement): () => void {
 
     for (const star of stars) {
       const h = horizontal(star.ra, star.dec, place.latitude, lst);
-      if (h.alt < -1) continue;
+      if (h.alt < -1 || !facing(h.alt, h.az)) continue;
       const p = project(h.alt, h.az);
       if (p.x < -40 || p.x > width + 40 || p.y < -40 || p.y > height + 40) continue;
       visibleCount++;
@@ -454,27 +667,52 @@ export function mount(root: HTMLElement): () => void {
     }
     ctx.globalAlpha = 1;
 
+    // ----- planets -----
+    for (const planet of planets) {
+      const h = horizontal(planet.ra, planet.dec, place.latitude, lst);
+      if (h.alt < 0 || !facing(h.alt, h.az)) continue;
+      const p = project(h.alt, h.az);
+      if (p.x < -30 || p.x > width + 30 || p.y < -30 || p.y > height + 30) continue;
+      const size = clamp(4.6 - planet.mag * 0.32, 1.7, 5.4);
+      ctx.fillStyle = planet.color;
+      ctx.shadowBlur = planet.mag < 1 ? 10 : 5;
+      ctx.shadowColor = planet.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, size, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      if (showLabels) {
+        ctx.globalAlpha = day ? 0.5 : 0.9;
+        ctx.fillStyle = day ? '#0b1730' : '#f6eeda';
+        ctx.font = '600 10px "Manrope Variable", sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(planet.name, p.x + size + 4, p.y + 3);
+        ctx.globalAlpha = 1;
+      }
+    }
+
     // ----- Sun -----
-    if (sunH.alt > -1) {
+    if (sunH.alt > -1 && facing(sunH.alt, sunH.az)) {
       const sp = project(Math.max(sunH.alt, 0), sunH.az);
-      const glow = ctx.createRadialGradient(sp.x, sp.y, 2, sp.x, sp.y, 54);
+      const glowSize = view === 'panorama' ? 64 : 54;
+      const glow = ctx.createRadialGradient(sp.x, sp.y, 2, sp.x, sp.y, glowSize);
       glow.addColorStop(0, 'rgba(255,246,216,0.9)');
       glow.addColorStop(0.18, 'rgba(255,203,92,0.6)');
       glow.addColorStop(1, 'rgba(255,160,60,0)');
       ctx.fillStyle = glow;
       ctx.beginPath();
-      ctx.arc(sp.x, sp.y, 54, 0, Math.PI * 2);
+      ctx.arc(sp.x, sp.y, glowSize, 0, Math.PI * 2);
       ctx.fill();
       ctx.fillStyle = '#fff6d8';
       ctx.beginPath();
-      ctx.arc(sp.x, sp.y, 8, 0, Math.PI * 2);
+      ctx.arc(sp.x, sp.y, view === 'panorama' ? 9 : 8, 0, Math.PI * 2);
       ctx.fill();
     }
 
     // ----- Moon with phase -----
-    if (moonH.alt > -1) {
+    if (moonH.alt > -1 && facing(moonH.alt, moonH.az)) {
       const mp = project(Math.max(moonH.alt, 0), moonH.az);
-      const radius = 10 + (zoom - 1) * 3;
+      const radius = (view === 'panorama' ? 12 : 10) + (zoom - 1) * 3;
       ctx.save();
       ctx.beginPath();
       ctx.arc(mp.x, mp.y, radius, 0, Math.PI * 2);
@@ -506,57 +744,86 @@ export function mount(root: HTMLElement): () => void {
       }
     }
 
-    // ----- horizon ring + cardinal directions -----
-    ctx.strokeStyle = day ? 'rgba(10,30,60,0.3)' : 'rgba(139,107,255,0.42)';
-    ctx.lineWidth = 1.4;
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, horizonRadius, 0, Math.PI * 2);
-    ctx.stroke();
-
-    ctx.font = '600 10px "JetBrains Mono Variable", monospace';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    const cardinals: [string, number][] = [
-      ['С', 0],
-      ['В', 90],
-      ['Ю', 180],
-      ['З', 270],
-    ];
-    for (let az = 0; az < 360; az += 15) {
-      const angle = (az - camAz) * (Math.PI / 180);
-      const inner = horizonRadius - (az % 45 === 0 ? 7 : 3);
-      const x1 = centerX + inner * Math.sin(angle);
-      const y1 = centerY - inner * Math.cos(angle);
-      const x2 = centerX + horizonRadius * Math.sin(angle);
-      const y2 = centerY - horizonRadius * Math.cos(angle);
-      ctx.globalAlpha = az % 45 === 0 ? 0.5 : 0.22;
-      ctx.strokeStyle = day ? 'rgba(10,30,60,0.5)' : '#bcc6ff';
-      ctx.lineWidth = 1;
+    // ----- horizon + cardinal directions -----
+    if (view === 'panorama') {
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const names: Record<number, string> = { 0: 'Север', 90: 'Восток', 180: 'Юг', 270: 'Запад' };
+      for (let az = 0; az < 360; az += 30) {
+        if (!facing(1.5, az)) continue;
+        const p = project(1.5, az);
+        if (p.x < 36 || p.x > width - 36) continue;
+        if (p.y > height - 8) continue;
+        const cardinal = names[az];
+        const y = Math.min(p.y + 17, height - 10);
+        ctx.strokeStyle = day ? 'rgba(10,20,40,0.35)' : 'rgba(190,200,240,0.35)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y + 2);
+        ctx.lineTo(p.x, y - 11);
+        ctx.stroke();
+        ctx.fillStyle = cardinal
+          ? day
+            ? 'rgba(10,20,40,0.9)'
+            : '#e8ecff'
+          : day
+            ? 'rgba(10,20,40,0.45)'
+            : 'rgba(190,200,235,0.5)';
+        ctx.font = cardinal ? '700 11px "Manrope Variable", sans-serif' : '600 9.5px "JetBrains Mono Variable", monospace';
+        ctx.fillText(cardinal ?? `${az}°`, p.x, y);
+      }
+    } else {
+      ctx.strokeStyle = day ? 'rgba(10,30,60,0.3)' : 'rgba(139,107,255,0.42)';
+      ctx.lineWidth = 1.4;
       ctx.beginPath();
-      ctx.moveTo(x1, y1);
-      ctx.lineTo(x2, y2);
+      ctx.arc(centerX, centerY, horizonRadius, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.font = '600 10px "JetBrains Mono Variable", monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const cardinals: [string, number][] = [
+        ['С', 0],
+        ['В', 90],
+        ['Ю', 180],
+        ['З', 270],
+      ];
+      for (let az = 0; az < 360; az += 15) {
+        const angle = (az - camAz) * (Math.PI / 180);
+        const inner = horizonRadius - (az % 45 === 0 ? 7 : 3);
+        const x1 = centerX + inner * Math.sin(angle);
+        const y1 = centerY - inner * Math.cos(angle);
+        const x2 = centerX + horizonRadius * Math.sin(angle);
+        const y2 = centerY - horizonRadius * Math.cos(angle);
+        ctx.globalAlpha = az % 45 === 0 ? 0.5 : 0.22;
+        ctx.strokeStyle = day ? 'rgba(10,30,60,0.5)' : '#bcc6ff';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+      }
+      for (const [label, az] of cardinals) {
+        const angle = (az - camAz) * (Math.PI / 180);
+        const rr = horizonRadius - 20;
+        const x = centerX + rr * Math.sin(angle);
+        const y = centerY - rr * Math.cos(angle);
+        ctx.globalAlpha = 0.9;
+        ctx.fillStyle = day ? '#0b1730' : label === 'С' ? '#c4f56a' : '#dfe4ff';
+        ctx.font = label === 'С' ? '700 12px "JetBrains Mono Variable", monospace' : '600 10px "JetBrains Mono Variable", monospace';
+        ctx.fillText(label, x, y);
+      }
+      ctx.globalAlpha = 1;
+
+      // zenith
+      ctx.strokeStyle = day ? 'rgba(10,30,60,0.3)' : 'rgba(200,210,255,0.25)';
+      ctx.beginPath();
+      ctx.moveTo(centerX - 5, centerY);
+      ctx.lineTo(centerX + 5, centerY);
+      ctx.moveTo(centerX, centerY - 5);
+      ctx.lineTo(centerX, centerY + 5);
       ctx.stroke();
     }
-    for (const [label, az] of cardinals) {
-      const angle = (az - camAz) * (Math.PI / 180);
-      const rr = horizonRadius - 20;
-      const x = centerX + rr * Math.sin(angle);
-      const y = centerY - rr * Math.cos(angle);
-      ctx.globalAlpha = 0.9;
-      ctx.fillStyle = day ? '#0b1730' : label === 'С' ? '#c4f56a' : '#dfe4ff';
-      ctx.font = label === 'С' ? '700 12px "JetBrains Mono Variable", monospace' : '600 10px "JetBrains Mono Variable", monospace';
-      ctx.fillText(label, x, y);
-    }
-    ctx.globalAlpha = 1;
-
-    // zenith
-    ctx.strokeStyle = day ? 'rgba(10,30,60,0.3)' : 'rgba(200,210,255,0.25)';
-    ctx.beginPath();
-    ctx.moveTo(centerX - 5, centerY);
-    ctx.lineTo(centerX + 5, centerY);
-    ctx.moveTo(centerX, centerY - 5);
-    ctx.lineTo(centerX, centerY + 5);
-    ctx.stroke();
 
     updateHud();
   };
@@ -569,7 +836,6 @@ export function mount(root: HTMLElement): () => void {
     lastFrame = now;
     if (playing) timestamp += dt * speed;
     draw(now);
-    void hudTick;
   };
 
   const nearestStar = (x: number, y: number): Star | null => {
@@ -612,13 +878,17 @@ export function mount(root: HTMLElement): () => void {
   let dragging = false;
   let moved = 0;
   let startX = 0;
+  let startY = 0;
   let startAz = 0;
+  let startAlt = 0;
 
   canvas.addEventListener('pointerdown', (event) => {
     dragging = true;
     moved = 0;
     startX = event.clientX;
+    startY = event.clientY;
     startAz = camAz;
+    startAlt = camAlt;
     canvas.setPointerCapture(event.pointerId);
     canvas.classList.add('is-dragging');
     $('#sky-hint', root)?.classList.add('is-hidden');
@@ -627,8 +897,11 @@ export function mount(root: HTMLElement): () => void {
   canvas.addEventListener('pointermove', (event) => {
     if (dragging) {
       const dx = event.clientX - startX;
-      moved = Math.max(moved, Math.abs(dx));
-      camAz = (((startAz - dx * (0.32 / zoom)) % 360) + 360) % 360;
+      const dy = event.clientY - startY;
+      moved = Math.max(moved, Math.abs(dx), Math.abs(dy));
+      const rate = view === 'panorama' ? 0.1 : 0.32;
+      camAz = (((startAz - dx * (rate / zoom)) % 360) + 360) % 360;
+      if (view === 'panorama') camAlt = clamp(startAlt + dy * 0.1, -8, 85);
       tooltip.hidden = true;
       return;
     }
@@ -684,7 +957,22 @@ export function mount(root: HTMLElement): () => void {
 
   canvas.addEventListener('dblclick', () => {
     zoom = 1;
-    camAz = place.latitude >= 0 ? 180 : 0;
+    camAz = defaultAz();
+    camAlt = 32;
+  });
+
+  root.querySelectorAll<HTMLButtonElement>('[data-view]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const next = button.dataset.view === 'dome' ? 'dome' : 'panorama';
+      if (next === view) return;
+      view = next;
+      root.querySelectorAll('[data-view]').forEach((b) => b.classList.toggle('is-active', b === button));
+      stage.classList.toggle('is-panorama', view === 'panorama');
+      zoom = 1;
+      camAz = defaultAz();
+      camAlt = 32;
+      $('#sky-hint', root)?.classList.remove('is-hidden');
+    });
   });
 
   const toggleButtons = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-toggle]'));
@@ -779,7 +1067,8 @@ export function mount(root: HTMLElement): () => void {
 
   $('#sky-reset', root)?.addEventListener('click', () => {
     zoom = 1;
-    camAz = place.latitude >= 0 ? 180 : 0;
+    camAz = defaultAz();
+    camAlt = 32;
   });
 
   const observer = new ResizeObserver(() => resize());

@@ -3,55 +3,14 @@ import { icon } from '../../core/icons';
 import { toast } from '../../core/toast';
 import { weatherGroup, weatherIcon, weatherLabel } from './icons';
 import { demoForecast } from './demo';
-
-interface Place {
-  name: string;
-  country?: string;
-  country_code?: string;
-  admin1?: string;
-  latitude: number;
-  longitude: number;
-  timezone?: string;
-}
-
-export interface Forecast {
-  current: {
-    time: string;
-    temperature_2m: number;
-    relative_humidity_2m: number;
-    apparent_temperature: number;
-    is_day: number;
-    precipitation: number;
-    weather_code: number;
-    cloud_cover: number;
-    pressure_msl: number;
-    wind_speed_10m: number;
-    wind_direction_10m: number;
-  };
-  hourly: {
-    time: string[];
-    temperature_2m: number[];
-    precipitation_probability: number[];
-    weather_code: number[];
-  };
-  daily: {
-    time: string[];
-    weather_code: number[];
-    temperature_2m_max: number[];
-    temperature_2m_min: number[];
-    sunrise: string[];
-    sunset: string[];
-    precipitation_probability_max: number[];
-    uv_index_max: number[];
-  };
-  timezone: string;
-  timezone_abbreviation: string;
-}
+import { fetchGismeteoForecast } from './gismeteo';
+import type { Forecast, Place, WeatherSource } from './types';
 
 interface Cached {
   place: Place;
   data: Forecast;
   ts: number;
+  source?: WeatherSource;
 }
 
 const DEFAULT_PLACE: Place = {
@@ -62,29 +21,54 @@ const DEFAULT_PLACE: Place = {
   latitude: 55.7558,
   longitude: 37.6173,
   timezone: 'Europe/Moscow',
+  gismeteoId: 4368,
 };
 
 const FALLBACK_CITIES: Place[] = [
-  { name: 'Москва', country: 'Россия', country_code: 'RU', admin1: 'Москва', latitude: 55.7558, longitude: 37.6173 },
-  { name: 'Санкт-Петербург', country: 'Россия', country_code: 'RU', admin1: 'Ленинградская область', latitude: 59.9343, longitude: 30.3351 },
-  { name: 'Казань', country: 'Россия', country_code: 'RU', admin1: 'Татарстан', latitude: 55.7961, longitude: 49.1064 },
-  { name: 'Екатеринбург', country: 'Россия', country_code: 'RU', admin1: 'Свердловская область', latitude: 56.8389, longitude: 60.6057 },
-  { name: 'Новосибирск', country: 'Россия', country_code: 'RU', admin1: 'Новосибирская область', latitude: 55.0084, longitude: 82.9357 },
-  { name: 'Сочи', country: 'Россия', country_code: 'RU', admin1: 'Краснодарский край', latitude: 43.6028, longitude: 39.7342 },
-  { name: 'Владивосток', country: 'Россия', country_code: 'RU', admin1: 'Приморский край', latitude: 43.1155, longitude: 131.8855 },
-  { name: 'Калининград', country: 'Россия', country_code: 'RU', admin1: 'Калининградская область', latitude: 54.7104, longitude: 20.4522 },
-  { name: 'Токио', country: 'Япония', country_code: 'JP', admin1: 'Токио', latitude: 35.6762, longitude: 139.6503 },
-  { name: 'Нью-Йорк', country: 'США', country_code: 'US', admin1: 'New York', latitude: 40.7128, longitude: -74.006 },
-  { name: 'Лондон', country: 'Великобритания', country_code: 'GB', admin1: 'England', latitude: 51.5072, longitude: -0.1276 },
-  { name: 'Париж', country: 'Франция', country_code: 'FR', admin1: 'Île-de-France', latitude: 48.8566, longitude: 2.3522 },
-  { name: 'Берлин', country: 'Германия', country_code: 'DE', admin1: 'Berlin', latitude: 52.52, longitude: 13.405 },
-  { name: 'Рим', country: 'Италия', country_code: 'IT', admin1: 'Lazio', latitude: 41.9028, longitude: 12.4964 },
-  { name: 'Барселона', country: 'Испания', country_code: 'ES', admin1: 'Catalonia', latitude: 41.3874, longitude: 2.1686 },
-  { name: 'Дубай', country: 'ОАЭ', country_code: 'AE', admin1: 'Dubai', latitude: 25.2048, longitude: 55.2708 },
-  { name: 'Сеул', country: 'Южная Корея', country_code: 'KR', admin1: 'Seoul', latitude: 37.5665, longitude: 126.978 },
-  { name: 'Сингапур', country: 'Сингапур', country_code: 'SG', admin1: 'Singapore', latitude: 1.3521, longitude: 103.8198 },
-  { name: 'Сидней', country: 'Австралия', country_code: 'AU', admin1: 'New South Wales', latitude: -33.8688, longitude: 151.2093 },
-  { name: 'Сан-Франциско', country: 'США', country_code: 'US', admin1: 'California', latitude: 37.7749, longitude: -122.4194 },
+  { name: 'Москва', country: 'Россия', country_code: 'RU', admin1: 'Москва', latitude: 55.7558, longitude: 37.6173, gismeteoId: 4368 },
+  { name: 'Санкт-Петербург', country: 'Россия', country_code: 'RU', admin1: 'Ленинградская область', latitude: 59.9343, longitude: 30.3351, gismeteoId: 4079 },
+  { name: 'Казань', country: 'Россия', country_code: 'RU', admin1: 'Татарстан', latitude: 55.7961, longitude: 49.1064, gismeteoId: 4364 },
+  { name: 'Екатеринбург', country: 'Россия', country_code: 'RU', admin1: 'Свердловская область', latitude: 56.8389, longitude: 60.6057, gismeteoId: 4517 },
+  { name: 'Новосибирск', country: 'Россия', country_code: 'RU', admin1: 'Новосибирская область', latitude: 55.0084, longitude: 82.9357, gismeteoId: 4690 },
+  { name: 'Сочи', country: 'Россия', country_code: 'RU', admin1: 'Краснодарский край', latitude: 43.6028, longitude: 39.7342, gismeteoId: 5233 },
+  { name: 'Владивосток', country: 'Россия', country_code: 'RU', admin1: 'Приморский край', latitude: 43.1155, longitude: 131.8855, gismeteoId: 4877 },
+  { name: 'Калининград', country: 'Россия', country_code: 'RU', admin1: 'Калининградская область', latitude: 54.7104, longitude: 20.4522, gismeteoId: 4225 },
+  { name: 'Токио', country: 'Япония', country_code: 'JP', admin1: 'Токио', latitude: 35.6762, longitude: 139.6503, gismeteoId: 5924 },
+  { name: 'Нью-Йорк', country: 'США', country_code: 'US', admin1: 'New York', latitude: 40.7128, longitude: -74.006, gismeteoId: 7190 },
+  { name: 'Лондон', country: 'Великобритания', country_code: 'GB', admin1: 'England', latitude: 51.5072, longitude: -0.1276, gismeteoId: 744 },
+  { name: 'Париж', country: 'Франция', country_code: 'FR', admin1: 'Île-de-France', latitude: 48.8566, longitude: 2.3522, gismeteoId: 1623 },
+  { name: 'Берлин', country: 'Германия', country_code: 'DE', admin1: 'Berlin', latitude: 52.52, longitude: 13.405, gismeteoId: 2391 },
+  { name: 'Рим', country: 'Италия', country_code: 'IT', admin1: 'Lazio', latitude: 41.9028, longitude: 12.4964, gismeteoId: 3561 },
+  { name: 'Барселона', country: 'Испания', country_code: 'ES', admin1: 'Catalonia', latitude: 41.3874, longitude: 2.1686, gismeteoId: 1948 },
+  { name: 'Дубай', country: 'ОАЭ', country_code: 'AE', admin1: 'Dubai', latitude: 25.2048, longitude: 55.2708, gismeteoId: 5529 },
+  { name: 'Сеул', country: 'Южная Корея', country_code: 'KR', admin1: 'Seoul', latitude: 37.5665, longitude: 126.978, gismeteoId: 5861 },
+  { name: 'Сингапур', country: 'Сингапур', country_code: 'SG', admin1: 'Singapore', latitude: 1.3521, longitude: 103.8198, gismeteoId: 6022 },
+  { name: 'Сидней', country: 'Австралия', country_code: 'AU', admin1: 'New South Wales', latitude: -33.8688, longitude: 151.2093, gismeteoId: 10719 },
+  { name: 'Сан-Франциско', country: 'США', country_code: 'US', admin1: 'California', latitude: 37.7749, longitude: -122.4194, gismeteoId: 7355 },
+  { name: 'Нижний Новгород', country: 'Россия', country_code: 'RU', admin1: 'Нижегородская область', latitude: 56.3269, longitude: 44.0059, gismeteoId: 4355 },
+  { name: 'Самара', country: 'Россия', country_code: 'RU', admin1: 'Самарская область', latitude: 53.1959, longitude: 50.1002, gismeteoId: 4618 },
+  { name: 'Омск', country: 'Россия', country_code: 'RU', admin1: 'Омская область', latitude: 54.9885, longitude: 73.3242, gismeteoId: 4578 },
+  { name: 'Ростов-на-Дону', country: 'Россия', country_code: 'RU', admin1: 'Ростовская область', latitude: 47.2357, longitude: 39.7015, gismeteoId: 5110 },
+  { name: 'Уфа', country: 'Россия', country_code: 'RU', admin1: 'Башкортостан', latitude: 54.7388, longitude: 55.9721, gismeteoId: 4588 },
+  { name: 'Красноярск', country: 'Россия', country_code: 'RU', admin1: 'Красноярский край', latitude: 56.0153, longitude: 92.8932, gismeteoId: 4674 },
+  { name: 'Воронеж', country: 'Россия', country_code: 'RU', admin1: 'Воронежская область', latitude: 51.672, longitude: 39.1843, gismeteoId: 5026 },
+  { name: 'Пермь', country: 'Россия', country_code: 'RU', admin1: 'Пермский край', latitude: 58.0105, longitude: 56.2502, gismeteoId: 4476 },
+  { name: 'Волгоград', country: 'Россия', country_code: 'RU', admin1: 'Волгоградская область', latitude: 48.708, longitude: 44.5133, gismeteoId: 5089 },
+  { name: 'Краснодар', country: 'Россия', country_code: 'RU', admin1: 'Краснодарский край', latitude: 45.0355, longitude: 38.9753, gismeteoId: 5136 },
+  { name: 'Саратов', country: 'Россия', country_code: 'RU', admin1: 'Саратовская область', latitude: 51.5336, longitude: 46.0343, gismeteoId: 5032 },
+  { name: 'Тюмень', country: 'Россия', country_code: 'RU', admin1: 'Тюменская область', latitude: 57.1522, longitude: 65.5272, gismeteoId: 4501 },
+  { name: 'Иркутск', country: 'Россия', country_code: 'RU', admin1: 'Иркутская область', latitude: 52.287, longitude: 104.281, gismeteoId: 4787 },
+  { name: 'Хабаровск', country: 'Россия', country_code: 'RU', admin1: 'Хабаровский край', latitude: 48.4827, longitude: 135.0838, gismeteoId: 4862 },
+  { name: 'Мурманск', country: 'Россия', country_code: 'RU', admin1: 'Мурманская область', latitude: 68.9585, longitude: 33.0827, gismeteoId: 3903 },
+  { name: 'Владимир', country: 'Россия', country_code: 'RU', admin1: 'Владимирская область', latitude: 56.129, longitude: 40.407, gismeteoId: 4350 },
+  { name: 'Ярославль', country: 'Россия', country_code: 'RU', admin1: 'Ярославская область', latitude: 57.6261, longitude: 39.8845, gismeteoId: 4313 },
+  { name: 'Минск', country: 'Беларусь', country_code: 'BY', admin1: 'Минск', latitude: 53.9006, longitude: 27.559, gismeteoId: 4248 },
+  { name: 'Киев', country: 'Украина', country_code: 'UA', admin1: 'Киев', latitude: 50.4501, longitude: 30.5234, gismeteoId: 4944 },
+  { name: 'Алматы', country: 'Казахстан', country_code: 'KZ', admin1: 'Алматы', latitude: 43.2389, longitude: 76.8897, gismeteoId: 5205 },
+  { name: 'Тбилиси', country: 'Грузия', country_code: 'GE', admin1: 'Тбилиси', latitude: 41.7151, longitude: 44.8271, gismeteoId: 5277 },
+  { name: 'Ереван', country: 'Армения', country_code: 'AM', admin1: 'Ереван', latitude: 40.1792, longitude: 44.4991, gismeteoId: 5298 },
+  { name: 'Ташкент', country: 'Узбекистан', country_code: 'UZ', admin1: 'Ташкент', latitude: 41.2995, longitude: 69.2401, gismeteoId: 5331 },
+  { name: 'Бишкек', country: 'Кыргызстан', country_code: 'KG', admin1: 'Бишкек', latitude: 42.8746, longitude: 74.5698, gismeteoId: 5327 },
 ];
 
 const CITY_TIMEZONES: Record<string, string> = {
@@ -108,12 +92,36 @@ const CITY_TIMEZONES: Record<string, string> = {
   'Сингапур': 'Asia/Singapore',
   'Сидней': 'Australia/Sydney',
   'Сан-Франциско': 'America/Los_Angeles',
+  'Нижний Новгород': 'Europe/Moscow',
+  'Самара': 'Europe/Samara',
+  'Омск': 'Asia/Omsk',
+  'Ростов-на-Дону': 'Europe/Moscow',
+  'Уфа': 'Asia/Yekaterinburg',
+  'Красноярск': 'Asia/Krasnoyarsk',
+  'Воронеж': 'Europe/Moscow',
+  'Пермь': 'Asia/Yekaterinburg',
+  'Волгоград': 'Europe/Volgograd',
+  'Краснодар': 'Europe/Moscow',
+  'Саратов': 'Europe/Saratov',
+  'Тюмень': 'Asia/Yekaterinburg',
+  'Иркутск': 'Asia/Irkutsk',
+  'Хабаровск': 'Asia/Vladivostok',
+  'Мурманск': 'Europe/Moscow',
+  'Владимир': 'Europe/Moscow',
+  'Ярославль': 'Europe/Moscow',
+  'Минск': 'Europe/Minsk',
+  'Киев': 'Europe/Kyiv',
+  'Алматы': 'Asia/Almaty',
+  'Тбилиси': 'Asia/Tbilisi',
+  'Ереван': 'Asia/Yerevan',
+  'Ташкент': 'Asia/Tashkent',
+  'Бишкек': 'Asia/Bishkek',
 };
 FALLBACK_CITIES.forEach((city) => {
   city.timezone = CITY_TIMEZONES[city.name] ?? 'UTC';
 });
 
-const cache = store<Cached | null>('wl.weather.v1', null);
+const cache = store<Cached | null>('wl.weather.v2', null);
 const recentsStore = store<Place[]>('wl.weather.places.v1', []);
 
 function countryBadge(code?: string): string {
@@ -156,6 +164,8 @@ export function mount(root: HTMLElement): () => void {
   let data: Forecast | null = cache.get()?.data ?? null;
   let unit: 'c' | 'f' = 'c';
   let lastUpdated = cache.get()?.ts ?? 0;
+  let source: WeatherSource = cache.get()?.source ?? 'gismeteo';
+  let gismeteoOk: boolean | null = null;
   let controller: AbortController | null = null;
   let demoMode = false;
   let disposed = false;
@@ -187,7 +197,7 @@ export function mount(root: HTMLElement): () => void {
 
       <div class="wx-demo" id="wx-demo-banner" hidden>
         ${icon('info')}
-        <span>Показаны <b>демо-данные</b>: Open-Meteo недоступен из этой сети. Логика интерфейса настоящая, цифры — сгенерированные.</span>
+        <span>Показаны <b>демо-данные</b>: Gismeteo и Open-Meteo недоступны из этой сети. Логика интерфейса настоящая, цифры — сгенерированные.</span>
         <button class="wx-demo__retry" type="button" id="wx-demo-retry">Повторить</button>
       </div>
       <div id="wx-body"></div>
@@ -217,7 +227,7 @@ export function mount(root: HTMLElement): () => void {
           <button class="btn btn--primary" type="button" id="wx-retry">${icon('refresh')} Попробовать снова</button>
           <button class="btn btn--ghost" type="button" id="wx-demo-city">Москва</button>
         </div>
-        <small>Источник: Open-Meteo. Проверьте соединение или попробуйте позже.</small>
+        <small>Источник: Gismeteo (резерв — Open-Meteo). Проверьте соединение или попробуйте позже.</small>
       </div>`;
     $('#wx-retry', root)?.addEventListener('click', () => void load(place));
     $('#wx-demo-city', root)?.addEventListener('click', () => {
@@ -244,6 +254,7 @@ export function mount(root: HTMLElement): () => void {
 
     const sunrise = hhmm(day.sunrise[0]);
     const sunset = hhmm(day.sunset[0]);
+    const uv = day.uv_index_max?.[0];
     const nowMin = Number(cur.time.split('T')[1].slice(0, 2)) * 60 + Number(cur.time.split('T')[1].slice(3, 5));
     const riseMin = Number(sunrise.split(':')[0]) * 60 + Number(sunrise.split(':')[1]);
     const setMin = Number(sunset.split(':')[0]) * 60 + Number(sunset.split(':')[1]);
@@ -316,7 +327,7 @@ export function mount(root: HTMLElement): () => void {
               <h2>${escapeHtml(place.name)}</h2>
               <p>${[place.admin1, place.country].filter(Boolean).join(', ') || 'ваше местоположение'} · местное время ${cur.time.slice(11, 16)}</p>
             </div>
-            <span class="pill wx-now__updated">${icon('clock')} ${lastUpdated ? new Date(lastUpdated).toLocaleTimeString('ru-RU', { timeZone: place.timezone || data.timezone, hour: '2-digit', minute: '2-digit' }) : '—'}</span>
+            <span class="pill wx-now__updated">${icon('clock')} ${lastUpdated ? new Date(lastUpdated).toLocaleTimeString('ru-RU', { timeZone: place.timezone, hour: '2-digit', minute: '2-digit' }) : '—'}</span>
           </div>
 
           <div class="wx-now__row">
@@ -357,8 +368,8 @@ export function mount(root: HTMLElement): () => void {
             [icon('weather'), 'ветер', `${wind(cur.wind_speed_10m)}`, `${windDirection(cur.wind_direction_10m)} · ${Math.round(cur.wind_direction_10m)}°`],
             [icon('weather'), 'влажность', `${cur.relative_humidity_2m}%`, 'относительная'],
             [icon('chart'), 'давление', `${Math.round(cur.pressure_msl)} hPa`, 'на уровне моря'],
-            [icon('weather'), 'осадки', `${cur.precipitation.toFixed(1)} мм`, 'за последний час'],
-            [icon('sun'), 'УФ-индекс', `${day.uv_index_max[0].toFixed(1)}`, day.uv_index_max[0] > 5 ? 'высокий' : 'умеренный'],
+            [icon('weather'), 'осадки', `${cur.precipitation.toFixed(1)} мм`, 'по данным сервиса'],
+            [icon('sun'), 'УФ-индекс', uv == null ? '—' : uv.toFixed(1), uv == null ? 'нет в источнике' : uv > 5 ? 'высокий' : 'умеренный'],
             [icon('weather'), 'облачность', `${cur.cloud_cover}%`, isNight ? 'ночное небо' : 'днём'],
           ]
             .map(
@@ -458,7 +469,7 @@ export function mount(root: HTMLElement): () => void {
                 ${countryBadge(p.country_code)} ${escapeHtml(p.name)}</button>`,
             )
             .join('')}
-          <span class="wx-source">данные: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a></span>
+          <span class="wx-source">данные: <a href="${source === 'gismeteo' ? 'https://www.gismeteo.ru/' : 'https://open-meteo.com/'}" target="_blank" rel="noopener">${source === 'gismeteo' ? 'Gismeteo' : source === 'open-meteo' ? 'Open-Meteo' : 'демо'}</a></span>
         </div>
       </div>
     `;
@@ -603,40 +614,75 @@ export function mount(root: HTMLElement): () => void {
     }
   });
 
+  const fetchOpenMeteo = async (p: Place, signal: AbortSignal): Promise<Forecast> => {
+    const params = new URLSearchParams({
+      latitude: p.latitude.toFixed(4),
+      longitude: p.longitude.toFixed(4),
+      current:
+        'temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,cloud_cover,pressure_msl,wind_speed_10m,wind_direction_10m',
+      hourly: 'temperature_2m,precipitation_probability,weather_code',
+      daily:
+        'weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_probability_max,uv_index_max',
+      timezone: 'auto',
+      forecast_days: '7',
+      temperature_unit: 'celsius',
+      wind_speed_unit: 'kmh',
+    });
+    const response = await fetch(`https://api.open-meteo.com/v1/forecast?${params.toString()}`, { signal });
+    if (!response.ok) throw new Error(`Open-Meteo вернул ${response.status}`);
+    return (await response.json()) as Forecast;
+  };
+
   const load = async (p: Place, opts: { silent?: boolean } = {}) => {
     controller?.abort();
     controller = new AbortController();
+    const signal = controller.signal;
     let timedOut = false;
     const timeout = window.setTimeout(() => {
       timedOut = true;
       controller?.abort();
-    }, 6000);
+    }, 7000);
     if (!opts.silent) renderSkeleton();
     const refresh = $('#wx-refresh', root);
     refresh?.classList.add('is-spinning');
 
     try {
-      const params = new URLSearchParams({
-        latitude: p.latitude.toFixed(4),
-        longitude: p.longitude.toFixed(4),
-        current:
-          'temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,cloud_cover,pressure_msl,wind_speed_10m,wind_direction_10m',
-        hourly: 'temperature_2m,precipitation_probability,weather_code',
-        daily:
-          'weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_probability_max,uv_index_max',
-        timezone: 'auto',
-        forecast_days: '7',
-        temperature_unit: 'celsius',
-        wind_speed_unit: 'kmh',
-      });
-      const response = await fetch(`https://api.open-meteo.com/v1/forecast?${params.toString()}`, { signal: controller.signal });
-      if (!response.ok) throw new Error(`Сервис вернул ${response.status}`);
-      const json = (await response.json()) as Forecast;
+      // Gismeteo is the primary source: its public feed sends CORS headers and is
+      // reachable where Open-Meteo is not. Open-Meteo stays as a fallback.
+      const providers: { id: WeatherSource; run: () => Promise<Forecast> }[] =
+        gismeteoOk === false
+          ? [
+              { id: 'open-meteo', run: () => fetchOpenMeteo(p, signal) },
+              { id: 'gismeteo', run: () => fetchGismeteoForecast(p, signal) },
+            ]
+          : [
+              { id: 'gismeteo', run: () => fetchGismeteoForecast(p, signal) },
+              { id: 'open-meteo', run: () => fetchOpenMeteo(p, signal) },
+            ];
+
+      let json: Forecast | null = null;
+      let used: WeatherSource = 'gismeteo';
+      let lastError: unknown = null;
+      for (const provider of providers) {
+        try {
+          json = await provider.run();
+          used = provider.id;
+          if (provider.id === 'gismeteo') gismeteoOk = true;
+          break;
+        } catch (error) {
+          lastError = error;
+          if (signal.aborted) throw error;
+          if (provider.id === 'gismeteo') gismeteoOk = false;
+        }
+      }
+      if (!json) throw lastError ?? new Error('Нет источника погоды');
+
       data = json;
       place = p;
+      source = used;
       demoMode = false;
       lastUpdated = Date.now();
-      cache.set({ place: p, data: json, ts: lastUpdated });
+      cache.set({ place: p, data: json, ts: lastUpdated, source: used });
       saveRecent(p);
       render();
       toast(`${p.name}: ${weatherLabel(json.current.weather_code).toLowerCase()}, ${temp(json.current.temperature_2m)}`, 'success');
@@ -646,11 +692,12 @@ export function mount(root: HTMLElement): () => void {
       if (!data) {
         data = demoForecast(p);
         place = p;
+        source = 'demo';
         demoMode = true;
         lastUpdated = Date.now();
         saveRecent(p);
         render();
-        toast('Open-Meteo недоступен — включён демо-режим', 'error');
+        toast('Gismeteo и Open-Meteo недоступны — включён демо-режим', 'error');
       } else {
         render();
         toast('Не удалось обновить — показаны последние данные', 'error');

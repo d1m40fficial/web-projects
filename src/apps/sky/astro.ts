@@ -148,6 +148,111 @@ export function formatUT(ms: number): string {
   return new Date(ms).toLocaleTimeString('ru-RU', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit' });
 }
 
+export interface Planet extends Equatorial {
+  id: string;
+  name: string;
+  mag: number;
+  color: string;
+}
+
+interface OrbitElements {
+  N: number;
+  dN: number;
+  i: number;
+  di: number;
+  w: number;
+  dw: number;
+  a: number;
+  da: number;
+  e: number;
+  de: number;
+  M: number;
+  dM: number;
+}
+
+/** Low-precision orbital elements (Paul Schlyter's method, epoch J2000). */
+const PLANET_ELEMENTS: (OrbitElements & { id: string; name: string; color: string; base: number; phase: number })[] = [
+  { id: 'mercury', name: 'Меркурий', color: '#d8cfc4', base: -0.36, phase: 0.027, N: 48.3313, dN: 3.24587e-5, i: 7.0047, di: 5.0e-8, w: 29.1241, dw: 1.01444e-5, a: 0.387098, da: 0, e: 0.205635, de: 5.59e-10, M: 168.6562, dM: 4.0923344368 },
+  { id: 'venus', name: 'Венера', color: '#fff2c8', base: -4.34, phase: 0.013, N: 76.6799, dN: 2.4659e-5, i: 3.3946, di: 2.75e-8, w: 54.891, dw: 1.38374e-5, a: 0.72333, da: 0, e: 0.006773, de: -1.302e-9, M: 48.0052, dM: 1.6021302244 },
+  { id: 'mars', name: 'Марс', color: '#ff8a66', base: -1.51, phase: 0.016, N: 49.5574, dN: 2.11081e-5, i: 1.8497, di: -1.78e-8, w: 286.5016, dw: 2.92961e-5, a: 1.523688, da: 0, e: 0.093405, de: 2.516e-9, M: 18.6021, dM: 0.5240207766 },
+  { id: 'jupiter', name: 'Юпитер', color: '#ffd7a0', base: -9.25, phase: 0.014, N: 100.4542, dN: 2.76854e-5, i: 1.303, di: -1.557e-7, w: 273.8777, dw: 1.64505e-5, a: 5.20256, da: 0, e: 0.048498, de: 4.469e-9, M: 19.895, dM: 0.0830853001 },
+  { id: 'saturn', name: 'Сатурн', color: '#ffe2a6', base: -9.0, phase: 0.044, N: 113.6634, dN: 2.3898e-5, i: 2.4886, di: -1.081e-7, w: 339.3939, dw: 2.97661e-5, a: 9.55475, da: 0, e: 0.055546, de: -9.499e-9, M: 316.967, dM: 0.0334442282 },
+  { id: 'uranus', name: 'Уран', color: '#a8ecff', base: -7.15, phase: 0.001, N: 74.0005, dN: 1.3978e-5, i: 0.7733, di: 1.9e-8, w: 96.6612, dw: 3.0565e-5, a: 19.18171, da: -1.55e-8, e: 0.047318, de: 7.45e-9, M: 142.5905, dM: 0.011725806 },
+  { id: 'neptune', name: 'Нептун', color: '#7aa8ff', base: -6.9, phase: 0.001, N: 131.7806, dN: 3.0173e-5, i: 1.77, di: -2.55e-7, w: 272.8461, dw: -6.027e-6, a: 30.05826, da: 3.313e-8, e: 0.008606, de: 2.15e-9, M: 260.2471, dM: 0.005995147 },
+];
+
+function eccentricAnomaly(mean: number, e: number): number {
+  let E = mean + e * Math.sin(mean) * (1 + e * Math.cos(mean));
+  for (let i = 0; i < 6; i++) {
+    const delta = (E - e * Math.sin(E) - mean) / (1 - e * Math.cos(E));
+    E -= delta;
+    if (Math.abs(delta) < 1e-7) break;
+  }
+  return E;
+}
+
+/** Heliocentric ecliptic coordinates in AU. */
+function heliocentric(el: OrbitElements, d: number): [number, number, number] {
+  const N = (el.N + el.dN * d) * DEG;
+  const inc = (el.i + el.di * d) * DEG;
+  const w = (el.w + el.dw * d) * DEG;
+  const a = el.a + el.da * d;
+  const e = el.e + el.de * d;
+  const M = (((el.M + el.dM * d) % 360) + 360) % 360 * DEG;
+  const E = eccentricAnomaly(M, e);
+  const x = a * (Math.cos(E) - e);
+  const y = a * Math.sqrt(1 - e * e) * Math.sin(E);
+
+  const cw = Math.cos(w);
+  const sw = Math.sin(w);
+  const cn = Math.cos(N);
+  const sn = Math.sin(N);
+  const ci = Math.cos(inc);
+
+  return [
+    x * (cw * cn - sw * sn * ci) - y * (sw * cn + cw * sn * ci),
+    x * (cw * sn + sw * cn * ci) + y * (cw * cn * ci - sw * sn),
+    x * sw * Math.sin(inc) + y * cw * Math.sin(inc),
+  ];
+}
+
+/** Apparent geocentric positions of the visible planets (≈1 arcminute accuracy). */
+export function planetPositions(ms: number): Planet[] {
+  const d = julianDate(ms) - 2451543.5;
+  const eps = (23.4393 - 3.563e-7 * d) * DEG;
+
+  const sunM = (((356.047 + 0.9856002585 * d) % 360) + 360) % 360 * DEG;
+  const sunW = (282.9404 + 4.70935e-5 * d) * DEG;
+  const sunE = 0.016709 - 1.151e-9 * d;
+  const Es = eccentricAnomaly(sunM, sunE);
+  const xv = Math.cos(Es) - sunE;
+  const yv = Math.sqrt(1 - sunE * sunE) * Math.sin(Es);
+  const sunLon = Math.atan2(yv, xv) + sunW;
+  const sunR = Math.hypot(xv, yv);
+  const xs = sunR * Math.cos(sunLon);
+  const ys = sunR * Math.sin(sunLon);
+
+  return PLANET_ELEMENTS.map((el) => {
+    const [xh, yh, zh] = heliocentric(el, d);
+    const xg = xh + xs;
+    const yg = yh + ys;
+    const zg = zh;
+
+    const rHelio = Math.hypot(xh, yh, zh);
+    const rGeo = Math.hypot(xg, yg, zg);
+    const phase = Math.acos(Math.max(-1, Math.min(1, (rHelio * rHelio + rGeo * rGeo - sunR * sunR) / (2 * rHelio * rGeo)))) * RAD;
+
+    const xe = xg;
+    const ye = yg * Math.cos(eps) - zg * Math.sin(eps);
+    const ze = yg * Math.sin(eps) + zg * Math.cos(eps);
+    const ra = ((Math.atan2(ye, xe) * RAD) % 360 + 360) % 360;
+    const dec = Math.atan2(ze, Math.hypot(xe, ye)) * RAD;
+    const mag = el.base + 5 * Math.log10(Math.max(1e-6, rHelio * rGeo)) + el.phase * phase;
+
+    return { id: el.id, name: el.name, ra: ra / 15, dec, mag, color: el.color };
+  });
+}
+
 function partsInZone(ms: number, timeZone: string): Record<string, number> {
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone,
