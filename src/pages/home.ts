@@ -16,11 +16,11 @@ function heroMarkup(): string {
         <div class="hero__copy">
           <div class="eyebrow eyebrow--pill hero__eyebrow reveal">
             <span class="status-dot"></span>
-            12 приложений · один репозиторий
+            7 приложений · один репозиторий
           </div>
 
           <h1 class="hero__title">
-            <span class="hero__line"><span class="hero__word">Двенадцать</span></span>
+            <span class="hero__line"><span class="hero__word">Семь</span></span>
             <span class="hero__line hero__line--rot">
               <span class="hero__rotator" aria-live="off">
                 ${ROTATING.map((w, i) => `<span class="${i === 0 ? 'is-on' : ''}">${w}</span>`).join('')}
@@ -30,7 +30,7 @@ function heroMarkup(): string {
           </h1>
 
           <p class="hero__lead reveal">
-            Приложения, игры и визуализации — от карты звёздного неба до визуализатора треков.
+            Приложения и игры — от генератора паролей до 2048 и архива старых экспериментов.
             Всё работает прямо в браузере: без бэкенда, регистрации и API-ключей.
           </p>
 
@@ -61,27 +61,14 @@ function heroMarkup(): string {
             </div>
 
             <div class="stage__screen">
-              <div class="hero-scene is-active" data-scene="weather">
+              <div class="hero-scene is-active" data-scene="password">
                 <div class="hs-head">
-                  <span class="hs-label">погода · Москва</span>
-                  <span class="hs-live"><i></i> live</span>
+                  <span class="hs-label">пароль · 20 символов</span>
+                  <span class="hs-live"><i></i> 131 бит</span>
                 </div>
-                <div class="hs-weather-main">
-                  <div class="hs-weather-icon">
-                    <div class="hs-sun"></div>
-                    <div class="hs-cloud"></div>
-                  </div>
-                  <div class="hs-temp"><b>18</b><span>°C</span><p>Ясно · ощущается 17°</p></div>
-                </div>
-                <svg class="hs-chart" viewBox="0 0 320 54" preserveAspectRatio="none" aria-hidden="true">
-                  <defs><linearGradient id="hs-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#38e0f2" stop-opacity=".35"/><stop offset="1" stop-color="#38e0f2" stop-opacity="0"/></linearGradient></defs>
-                  <path d="M0 38 C 28 34, 40 20, 64 24 S 104 40, 128 30 S 164 8, 192 16 S 238 40, 264 26 S 300 12, 320 18 L 320 54 L 0 54 Z" fill="url(#hs-fill)"/>
-                  <path d="M0 38 C 28 34, 40 20, 64 24 S 104 40, 128 30 S 164 8, 192 16 S 238 40, 264 26 S 300 12, 320 18" fill="none" stroke="#38e0f2" stroke-width="2" stroke-linecap="round"/>
-                </svg>
-                <div class="hs-days">
-                  <span><i>пт</i><b>21°</b></span><span><i>сб</i><b>19°</b></span><span><i>вс</i><b>24°</b></span>
-                  <span><i>пн</i><b>22°</b></span><span><i>вт</i><b>20°</b></span>
-                </div>
+                <div class="hs-pass">N7$vK!mQ2#Lx<span class="hs-caret"></span></div>
+                <div class="hs-pass__bar"><i></i><i></i><i></i><i></i></div>
+                <div class="hs-pass__meta"><span>crypto.getRandomValues</span><span>взлом: дольше Вселенной</span></div>
               </div>
 
               <div class="hero-scene" data-scene="2048">
@@ -94,22 +81,14 @@ function heroMarkup(): string {
                 <p class="hs-hint">${icon('keyboard')} стрелки · свайпы · отмена</p>
               </div>
 
-              <div class="hero-scene" data-scene="sky">
-                <div class="hs-sky">
-                  ${Array.from({ length: 26 }, (_, i) => `<i style="left:${(i * 37) % 96}%;top:${(i * 53) % 88}%;animation-delay:${(i * 0.17).toFixed(2)}s"></i>`).join('')}
-                  <svg viewBox="0 0 300 190" aria-hidden="true">
-                    <polyline points="60,58 92,38 122,60 104,96 66,92" fill="none" stroke="rgba(139,107,255,.5)" stroke-width="1"/>
-                    <polyline points="168,120 200,98 232,116 220,146 186,150" fill="none" stroke="rgba(56,224,242,.35)" stroke-width="1"/>
-                    <circle cx="60" cy="58" r="2.4" fill="#fff"/><circle cx="92" cy="38" r="3.2" fill="#cfe4ff"/>
-                    <circle cx="122" cy="60" r="2" fill="#fff"/><circle cx="104" cy="96" r="2.8" fill="#ffe9c9"/>
-                    <circle cx="66" cy="92" r="1.8" fill="#fff"/><circle cx="168" cy="120" r="2" fill="#fff"/>
-                    <circle cx="200" cy="98" r="2.6" fill="#d8ecff"/><circle cx="232" cy="116" r="1.8" fill="#fff"/>
-                    <circle cx="220" cy="146" r="2.3" fill="#ffd9e8"/><circle cx="186" cy="150" r="1.6" fill="#fff"/>
-                  </svg>
-                  <div class="hs-moon"></div>
-                  <div class="hs-coords"><span>LST 21:04</span><span>ALT 42°</span><span>AZ 128°</span></div>
+              <div class="hero-scene" data-scene="memory">
+                <div class="hs-head"><span class="hs-label">memory · 4×4</span><span class="hs-score">12 ходов</span></div>
+                <div class="hs-memory">
+                  ${['◆', '●', '▲', '■', '◆', '●', '▲', '■', '✦', '✧', '✦', '✧', '◇', '◈', '◇', '◈']
+                    .map((s, i) => `<span class="hs-mem ${i === 0 || i === 8 ? 'is-open' : ''} ${i === 2 || i === 3 ? 'is-done' : ''}">${s}</span>`)
+                    .join('')}
                 </div>
-                <div class="hs-sky-label">Москва · 55.75° N · 21:40</div>
+                <p class="hs-hint">3D-переворот · рекорды</p>
               </div>
 
               <div class="hero-scene" data-scene="palette">
@@ -127,20 +106,20 @@ function heroMarkup(): string {
             </div>
 
             <div class="stage__tabs" role="tablist" aria-label="Превью приложений">
-              <button class="stage__tab is-active" type="button" data-scene-btn="weather" role="tab" aria-selected="true">погода</button>
+              <button class="stage__tab is-active" type="button" data-scene-btn="password" role="tab" aria-selected="true">пароль</button>
               <button class="stage__tab" type="button" data-scene-btn="2048" role="tab" aria-selected="false">2048</button>
-              <button class="stage__tab" type="button" data-scene-btn="sky" role="tab" aria-selected="false">небо</button>
+              <button class="stage__tab" type="button" data-scene-btn="memory" role="tab" aria-selected="false">память</button>
               <button class="stage__tab" type="button" data-scene-btn="palette" role="tab" aria-selected="false">цвет</button>
             </div>
           </div>
 
-          <div class="hero__float hero__float--a"><span class="tag">${icon('sparkles')} 12 apps</span></div>
+          <div class="hero__float hero__float--a"><span class="tag">${icon('sparkles')} 7 apps</span></div>
           <div class="hero__float hero__float--b"><span class="tag">${icon('github')} open source</span></div>
         </div>
       </div>
 
       <div class="wrap hero__stats">
-        <div class="stat reveal"><b><span data-count="12">0</span></b><span>интерактивных приложений</span></div>
+        <div class="stat reveal"><b><span data-count="7">0</span></b><span>интерактивных приложений</span></div>
         <div class="stat reveal"><b><span data-count="9">0</span></b><span>играбельных архивов</span></div>
         <div class="stat reveal"><b><span data-count="0">0</span></b><span>бэкенда в работе</span></div>
         <div class="stat reveal"><b><span data-count="100" data-suffix="%">0</span></b><span>работает в браузере</span></div>
@@ -155,15 +134,12 @@ function marqueeMarkup(): string {
     'Canvas 2D',
     'Web Crypto',
     'localStorage',
-    'Gismeteo feed',
     'SVG charts',
     'CSS 3D',
     'Vite',
-    'Astronomy math',
-    'GPX / GeoJSON',
-    'QR encoding',
-    'Markdown parser',
-    'Geolocation API',
+    'Game logic',
+    'Web Animations API',
+    'WCAG contrast',
     'IntersectionObserver',
     'Responsive design',
     'prefers-reduced-motion',
@@ -213,7 +189,7 @@ function projectsMarkup(): string {
         <div class="section-head">
           <div>
             <span class="eyebrow">коллекция</span>
-            <h2 class="h2">Двенадцать <span class="grad-text">живых</span> проектов</h2>
+            <h2 class="h2">Семь <span class="grad-text">живых</span> проектов</h2>
             <p class="lead" style="margin-top:16px">
               Каждая карточка — отдельное приложение со своей логикой, состоянием и визуальным языком.
               Нажмите, чтобы открыть вживую.
@@ -245,6 +221,44 @@ function projectsMarkup(): string {
           ${projects.map((p) => cardMarkup(p.slug)).join('')}
         </div>
         <p class="grid-empty" id="grid-empty" hidden>Ничего не нашлось. Попробуйте «canvas» или сбросьте фильтр.</p>
+      </div>
+    </section>
+  `;
+}
+
+function splitMarkup(): string {
+  const separate = [
+    { name: 'QR Studio', note: 'QR-коды · печатный стиль', href: 'https://d1m40fficial.github.io/qr-studio/', color: '#ff4b2b' },
+    { name: 'Атмосфера', note: 'погода · Gismeteo', href: 'https://d1m40fficial.github.io/weather/', color: '#f2a65a' },
+    { name: 'Orbita', note: 'карта звёздного неба', href: 'https://d1m40fficial.github.io/sky-map/', color: '#d7b56d' },
+    { name: 'plain', note: 'минималистичный блокнот', href: 'https://d1m40fficial.github.io/notes/', color: '#8a857c' },
+    { name: 'Расписание', note: 'пары преподавателей', href: 'https://d1m40fficial.github.io/teacher-schedule/', color: '#8c2f39' },
+  ];
+  return `
+    <section class="section split" id="separate">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">отдельные репозитории</span>
+            <h2 class="h2">Пять <span class="grad-text">отдельных</span> вселенных</h2>
+            <p class="lead" style="margin-top:16px">
+              QR, погода, небо, блокнот и расписание переехали в собственные репозитории — со своим характером и без общего дизайна.
+            </p>
+          </div>
+        </div>
+        <div class="split-grid">
+          ${separate
+            .map(
+              (p) => `
+              <a class="split-card" href="${p.href}" target="_blank" rel="noopener" style="--sc:${p.color}">
+                <span class="split-card__dot"></span>
+                <b>${p.name}</b>
+                <span>${p.note}</span>
+                <i>${icon('external')}</i>
+              </a>`,
+            )
+            .join('')}
+        </div>
       </div>
     </section>
   `;
@@ -359,6 +373,7 @@ export function mountHome(root: HTMLElement): () => void {
     ${heroMarkup()}
     ${marqueeMarkup()}
     ${projectsMarkup()}
+    ${splitMarkup()}
     ${archiveMarkup()}
     ${principlesMarkup()}
     ${ctaMarkup()}

@@ -21,13 +21,13 @@ export function mountArchivePage(root: HTMLElement): () => void {
             <span class="eyebrow">из папки C:\\Projects\\WEB</span>
             <h1 class="archive-title">Локальный <span class="grad-text">архив</span></h1>
             <p class="archive-lead">
-              Проекты, написанные до этой витрины: canvas-игры, судоку, таймер и звёздное поле.
-              Девять из них запускаются прямо в браузере, Python-инструменты открыты как исходники.
+              Проекты, написанные до этой витрины: canvas-игры, судоку, таймер, звёздное поле и Nohea.
+              Все девять запускаются прямо в браузере.
             </p>
             <div class="archive-head__meta">
               <span class="pill">${icon('archive')} ${legacyProjects.length} проектов</span>
               <span class="pill">${icon('play')} ${playable} играбельных</span>
-              <span class="pill">${icon('code')} vanilla JS & Python</span>
+              <span class="pill">${icon('code')} vanilla JS & iframe</span>
             </div>
           </div>
           <a class="btn btn--ghost" href="${REPO_URL}/tree/main/legacy-src" target="_blank" rel="noopener">
@@ -39,8 +39,8 @@ export function mountArchivePage(root: HTMLElement): () => void {
 
         <div class="archive-foot">
           <p class="help">
-            ${icon('info')} Оригинальные файлы лежат в <code>public/legacy</code> без изменений.
-            Python-проекты — в <code>legacy-src</code>.
+            ${icon('info')} Оригинальные игры лежат в <code>public/legacy</code>; Nohea переписан для браузера.
+            Исходники — в <code>legacy-src</code>.
           </p>
           <a class="link-arrow" href="#/app/archive">Открыть как приложение ${icon('arrow')}</a>
         </div>

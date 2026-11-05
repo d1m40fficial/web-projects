@@ -19,13 +19,13 @@ const stack = [
   {
     icon: 'stars',
     title: 'Canvas и SVG',
-    text: 'Звёздное небо, треки, 2048 и графики рисуются вручную: никаких готовых чарт-библиотек.',
+    text: '2048, Memory и графики рисуются вручную: CSS transforms, Canvas и SVG без готовых библиотек.',
     tags: ['Canvas 2D', 'SVG', 'DPR'],
   },
   {
     icon: 'globe',
     title: 'Настоящие Web APIs',
-    text: 'Fetch, Web Crypto, Geolocation, Clipboard, FileReader, IntersectionObserver, Web Animations.',
+    text: 'Fetch, Web Crypto, Clipboard, IntersectionObserver, Web Animations.',
     tags: ['fetch', 'crypto', 'files'],
   },
   {
@@ -38,15 +38,15 @@ const stack = [
     icon: 'archive',
     title: 'Ноль бэкенда',
     text: 'GitHub Pages раздаёт статику. Данные — публичные API и localStorage, поэтому демо живёт бесплатно.',
-    tags: ['static', 'localStorage', 'Gismeteo'],
+    tags: ['static', 'localStorage', 'GitHub Pages'],
   },
 ];
 
 const skills = [
   'Архитектура SPA и ленивая загрузка модулей',
   'Canvas-рендеринг с devicePixelRatio и ResizeObserver',
-  'Астрономические и геодезические расчёты',
-  'Парсинг GPX, GeoJSON, CSV и Markdown',
+  'Игровая логика 2048 и Memory',
+  'Генерация палитр и проверка контраста WCAG',
   'Криптографически стойкая генерация',
   'Визуализация данных на чистом SVG',
   'Состояние, отмена действий и восстановление',
@@ -60,15 +60,15 @@ export function mountAbout(root: HTMLElement): void {
         <span class="eyebrow">о проекте</span>
         <h1 class="about-title">Витрина, которая <span class="grad-text">не врёт</span></h1>
         <p class="about-lead">
-          web/lab — не набор скриншотов и не мокапы. Это двенадцать работающих приложений,
+          web/lab — не набор скриншотов и не мокапы. Это семь работающих приложений,
           собранных в одном статическом сайте. Каждое можно открыть, потрогать и посмотреть,
           как оно устроено.
         </p>
         <div class="about-stats">
-          <div><b>12</b><span>приложений</span></div>
-          <div><b>11</b><span>архивных проектов</span></div>
+          <div><b>7</b><span>приложений</span></div>
+          <div><b>9</b><span>архивных проектов</span></div>
           <div><b>0</b><span>бэкенда</span></div>
-          <div><b>1</b><span>репозиторий</span></div>
+          <div><b>6</b><span>репозиториев</span></div>
         </div>
       </div>
     </section>
@@ -110,7 +110,7 @@ export function mountAbout(root: HTMLElement): void {
         </div>
 
         <div class="arch__notes">
-          <p><b>Почему hash?</b> GitHub Pages не умеет отдавать 404 на вложенные пути, зато отлично работает с <code>#/app/sky</code>.</p>
+          <p><b>Почему hash?</b> GitHub Pages не умеет отдавать 404 на вложенные пути, зато отлично работает с <code>#/app/memory</code>.</p>
           <p><b>Почему без фреймворка?</b> Хотелось показать платформу: DOM, Canvas, события и CSS без прослойки.</p>
           <p><b>Что с размерами?</b> Главная не тянет код приложений: каждый модуль — отдельный чанк.</p>
         </div>
@@ -155,9 +155,8 @@ export function mountAbout(root: HTMLElement): void {
           <h3>Ограничения, о которых стоит знать</h3>
           <ul>
             <li><b>Демо-данные.</b> Оценки фильмов и книг приблизительны и собраны для визуализации.</li>
-            <li><b>Погода и города.</b> Основной источник — Gismeteo, резервный — Open-Meteo; без сети покажется кеш или демо-данные.</li>
-            <li><b>Архив.</b> Старые игры встроены как есть — их код не переписывался под витрину.</li>
-            <li><b>Python-проекты.</b> Не запускаются на Pages; открыты как исходники в репозитории.</li>
+            <li><b>Внешние проекты.</b> QR, погода, карта неба, блокнот и расписание живут в отдельных репозиториях и не входят в эту сборку.</li>
+            <li><b>Архив.</b> Старые игры встроены как есть; исходники лежат в <code>legacy-src</code>.</li>
           </ul>
         </aside>
       </div>

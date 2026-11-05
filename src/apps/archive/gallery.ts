@@ -42,19 +42,16 @@ function play(project: LegacyProject): void {
 
 export function galleryMarkup(): string {
   const playable = legacyProjects.filter((p) => p.playable).length;
-  const python = legacyProjects.length - playable;
 
   return `
     <div class="archive-intro">
       <span class="pill">${icon('play')} ${playable} запускаются здесь</span>
-      <span class="pill">${icon('code')} ${python} python-проекта в исходниках</span>
       <span class="pill">${icon('archive')} ${legacyProjects.length} всего</span>
     </div>
 
     <div class="legacy-tabs segmented" role="tablist" aria-label="Категории архива">
       <button class="is-active" type="button" data-legacy-filter="all">Все <span class="chip__count">${legacyProjects.length}</span></button>
       <button type="button" data-legacy-filter="playable">Играбельные <span class="chip__count">${playable}</span></button>
-      <button type="button" data-legacy-filter="python">Python <span class="chip__count">${python}</span></button>
     </div>
 
     <div class="legacy-grid">
@@ -131,8 +128,7 @@ export function mountArchiveGallery(root: HTMLElement): () => void {
     <div class="archive-app">
       ${galleryMarkup()}
       <p class="help archive-app__note">
-        ${icon('info')} Игры встроены через iframe и работают изолированно. Python-проекты не исполняются на GitHub Pages —
-        откройте их исходники в репозитории.
+        ${icon('info')} Все проекты запускаются в изолированном iframe прямо здесь. Оригинальные исходники лежат в <code>legacy-src</code>.
       </p>
     </div>
   `;
