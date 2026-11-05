@@ -500,8 +500,8 @@
   color: #f3f4fb;
 }
 .hero__float--a {
-  top: -14px;
-  right: -12px;
+  top: -30px;
+  right: 18px;
   animation-delay: -1.5s;
 }
 .hero__float--b {
