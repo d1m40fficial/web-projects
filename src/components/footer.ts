@@ -21,7 +21,7 @@ export function renderFooter(): void {
             </span>
             <span>web<span class="logo__slash">/</span>lab</span>
           </a>
-          <p>Один репозиторий — двенадцать живых приложений. TypeScript, Canvas, Web APIs и ноль бэкенда. Собрано как витрина фронтенд-навыков.</p>
+          <p>Один репозиторий — семь живых приложений. TypeScript, Canvas, Web APIs и ноль бэкенда. Собрано как витрина фронтенд-навыков.</p>
           <span class="footer__status"><span class="status-dot"></span> Все системы работают · статический хостинг</span>
         </div>
 
