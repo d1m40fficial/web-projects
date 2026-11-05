@@ -332,7 +332,7 @@ function principlesMarkup(): string {
           <article class="principle reveal">
             <span class="principle__icon">${icon('code')}</span>
             <h3>Настоящие вычисления</h3>
-            <p>Астрономия, геодезия, QR-кодирование, парсинг GPX и графики — написаны руками, а не спрятаны за чёрным ящиком.</p>
+            <p>Игровая логика, генерация палитр, SVG-графики и CSS-анимации — написаны руками, а не спрятаны за чёрным ящиком.</p>
             <span class="principle__meta">math · parsers · canvas</span>
           </article>
           <article class="principle reveal">
