@@ -1,18 +1,18 @@
-import{R as t,P as c,i as s,o as l}from"./index-Be7fSKWx.js";const n=[{icon:"code",title:"TypeScript, strict",text:"Ни одного any в прикладной логике. Модули, типы домена, аккуратные границы между UI и вычислениями.",tags:["TS 5","ES2022","typed DOM"]},{icon:"layers",title:"Vite без фреймворка",text:"Свой hash-роутер, реестр приложений и ленивая загрузка чанков. Ни React, ни Vue — только платформа.",tags:["Vite","code splitting","SPA"]},{icon:"stars",title:"Canvas и SVG",text:"Звёздное небо, треки, 2048 и графики рисуются вручную: никаких готовых чарт-библиотек.",tags:["Canvas 2D","SVG","DPR"]},{icon:"globe",title:"Настоящие Web APIs",text:"Fetch, Web Crypto, Geolocation, Clipboard, FileReader, IntersectionObserver, Web Animations.",tags:["fetch","crypto","files"]},{icon:"palette",title:"Дизайн-система на CSS",text:"Токены, тёмная и светлая темы, адаптив, motion-safe режим и переиспользуемые компоненты.",tags:["custom properties","a11y","responsive"]},{icon:"archive",title:"Ноль бэкенда",text:"GitHub Pages раздаёт статику. Данные — публичные API и localStorage, поэтому демо живёт бесплатно.",tags:["static","localStorage","Gismeteo"]}],o=["Архитектура SPA и ленивая загрузка модулей","Canvas-рендеринг с devicePixelRatio и ResizeObserver","Астрономические и геодезические расчёты","Парсинг GPX, GeoJSON, CSV и Markdown","Криптографически стойкая генерация","Визуализация данных на чистом SVG","Состояние, отмена действий и восстановление","Доступность, фокус-менеджмент, reduced motion"];function r(e){e.innerHTML=`
+import{R as t,P as i,i as s,o as l}from"./index-C3FS2Uvm.js";const n=[{icon:"code",title:"TypeScript, strict",text:"Ни одного any в прикладной логике. Модули, типы домена, аккуратные границы между UI и вычислениями.",tags:["TS 5","ES2022","typed DOM"]},{icon:"layers",title:"Vite без фреймворка",text:"Свой hash-роутер, реестр приложений и ленивая загрузка чанков. Ни React, ни Vue — только платформа.",tags:["Vite","code splitting","SPA"]},{icon:"stars",title:"Canvas и SVG",text:"2048, Memory и графики рисуются вручную: CSS transforms, Canvas и SVG без готовых библиотек.",tags:["Canvas 2D","SVG","DPR"]},{icon:"globe",title:"Настоящие Web APIs",text:"Fetch, Web Crypto, Clipboard, IntersectionObserver, Web Animations.",tags:["fetch","crypto","files"]},{icon:"palette",title:"Дизайн-система на CSS",text:"Токены, тёмная и светлая темы, адаптив, motion-safe режим и переиспользуемые компоненты.",tags:["custom properties","a11y","responsive"]},{icon:"archive",title:"Ноль бэкенда",text:"GitHub Pages раздаёт статику. Данные — публичные API и localStorage, поэтому демо живёт бесплатно.",tags:["static","localStorage","GitHub Pages"]}],o=["Архитектура SPA и ленивая загрузка модулей","Canvas-рендеринг с devicePixelRatio и ResizeObserver","Игровая логика 2048 и Memory","Генерация палитр и проверка контраста WCAG","Криптографически стойкая генерация","Визуализация данных на чистом SVG","Состояние, отмена действий и восстановление","Доступность, фокус-менеджмент, reduced motion"];function r(e){e.innerHTML=`
     <section class="section about-hero">
       <div class="wrap">
         <span class="eyebrow">о проекте</span>
         <h1 class="about-title">Витрина, которая <span class="grad-text">не врёт</span></h1>
         <p class="about-lead">
-          web/lab — не набор скриншотов и не мокапы. Это двенадцать работающих приложений,
+          web/lab — не набор скриншотов и не мокапы. Это семь работающих приложений,
           собранных в одном статическом сайте. Каждое можно открыть, потрогать и посмотреть,
           как оно устроено.
         </p>
         <div class="about-stats">
-          <div><b>12</b><span>приложений</span></div>
-          <div><b>11</b><span>архивных проектов</span></div>
+          <div><b>7</b><span>приложений</span></div>
+          <div><b>9</b><span>архивных проектов</span></div>
           <div><b>0</b><span>бэкенда</span></div>
-          <div><b>1</b><span>репозиторий</span></div>
+          <div><b>6</b><span>репозиториев</span></div>
         </div>
       </div>
     </section>
@@ -54,7 +54,7 @@ import{R as t,P as c,i as s,o as l}from"./index-Be7fSKWx.js";const n=[{icon:"cod
         </div>
 
         <div class="arch__notes">
-          <p><b>Почему hash?</b> GitHub Pages не умеет отдавать 404 на вложенные пути, зато отлично работает с <code>#/app/sky</code>.</p>
+          <p><b>Почему hash?</b> GitHub Pages не умеет отдавать 404 на вложенные пути, зато отлично работает с <code>#/app/memory</code>.</p>
           <p><b>Почему без фреймворка?</b> Хотелось показать платформу: DOM, Canvas, события и CSS без прослойки.</p>
           <p><b>Что с размерами?</b> Главная не тянет код приложений: каждый модуль — отдельный чанк.</p>
         </div>
@@ -75,7 +75,7 @@ import{R as t,P as c,i as s,o as l}from"./index-Be7fSKWx.js";const n=[{icon:"cod
               <span class="stack-card__icon">${s(a.icon)}</span>
               <h3>${a.title}</h3>
               <p>${a.text}</p>
-              <div class="stack-card__tags">${a.tags.map(i=>`<span class="tag">${i}</span>`).join("")}</div>
+              <div class="stack-card__tags">${a.tags.map(c=>`<span class="tag">${c}</span>`).join("")}</div>
             </article>`).join("")}
         </div>
       </div>
@@ -95,9 +95,8 @@ import{R as t,P as c,i as s,o as l}from"./index-Be7fSKWx.js";const n=[{icon:"cod
           <h3>Ограничения, о которых стоит знать</h3>
           <ul>
             <li><b>Демо-данные.</b> Оценки фильмов и книг приблизительны и собраны для визуализации.</li>
-            <li><b>Погода и города.</b> Основной источник — Gismeteo, резервный — Open-Meteo; без сети покажется кеш или демо-данные.</li>
-            <li><b>Архив.</b> Старые игры встроены как есть — их код не переписывался под витрину.</li>
-            <li><b>Python-проекты.</b> Не запускаются на Pages; открыты как исходники в репозитории.</li>
+            <li><b>Внешние проекты.</b> QR, погода, карта неба, блокнот и расписание живут в отдельных репозиториях и не входят в эту сборку.</li>
+            <li><b>Архив.</b> Старые игры встроены как есть; исходники лежат в <code>legacy-src</code>.</li>
           </ul>
         </aside>
       </div>
@@ -113,7 +112,7 @@ import{R as t,P as c,i as s,o as l}from"./index-Be7fSKWx.js";const n=[{icon:"cod
           </div>
           <div class="cta__actions">
             <a class="btn btn--primary" href="${t}" target="_blank" rel="noopener">${s("github")} GitHub</a>
-            <a class="btn btn--ghost" href="${c}" target="_blank" rel="noopener">${s("external")} Pages</a>
+            <a class="btn btn--ghost" href="${i}" target="_blank" rel="noopener">${s("external")} Pages</a>
             <a class="btn btn--ghost" href="${t}/blob/main/README.md" target="_blank" rel="noopener">${s("notes")} README</a>
           </div>
         </div>

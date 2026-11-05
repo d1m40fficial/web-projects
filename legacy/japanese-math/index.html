@@ -1,0 +1,469 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nohea — японская математика на память</title>
+<meta name="description" content="Тренажёр устного счёта и памяти: 5, 10 или 15 минут, растущая сложность, серии и история результатов.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..600&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    color-scheme: light;
+    --paper: #f2ede3;
+    --sheet: #fbf8f1;
+    --ink: #1b1a17;
+    --muted: #716b5f;
+    --faint: #a49c8c;
+    --line: rgba(27, 26, 23, .14);
+    --line-2: rgba(27, 26, 23, .3);
+    --red: #b33a2b;
+    --red-soft: #f4e2dc;
+    --green: #426b4f;
+    --mono: 'IBM Plex Mono', ui-monospace, monospace;
+    --serif: 'Fraunces', Georgia, serif;
+    --sans: 'Inter', system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; }
+  body {
+    background:
+      radial-gradient(ellipse 60% 40% at 85% -10%, rgba(179, 58, 43, .08), transparent 60%),
+      var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.5;
+    padding: 24px 18px 40px;
+  }
+  body::before {
+    content: '';
+    position: fixed; inset: 0; pointer-events: none; opacity: .3;
+    background-image: radial-gradient(rgba(27,26,23,.22) .5px, transparent .5px);
+    background-size: 5px 5px;
+  }
+  .app { position: relative; z-index: 1; max-width: 920px; margin: 0 auto; }
+  header { display: flex; align-items: flex-start; gap: 18px; padding-bottom: 18px; border-bottom: 2px solid var(--ink); }
+  .brand { font-family: var(--serif); font-size: clamp(2rem, 5vw, 3rem); font-weight: 300; letter-spacing: -.04em; line-height: .95; }
+  .brand small { display: block; margin-top: 8px; font-family: var(--mono); font-size: .54rem; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); }
+  .seal {
+    margin-left: auto; flex: none; width: 44px; height: 44px; display: grid; place-items: center;
+    border: 2px solid var(--red); color: var(--red); font-family: var(--serif); font-size: 1.2rem;
+  }
+  .seal::after { content: '無'; }
+
+  .board {
+    display: grid; grid-template-columns: minmax(0, 1fr) 230px; gap: 0;
+    border-bottom: 1px solid var(--line-2);
+  }
+  .practice { padding: 28px 32px 28px 0; border-right: 1px solid var(--line); }
+  .timer { padding: 28px 0 28px 28px; display: grid; align-content: start; gap: 14px; }
+  .timer__label, .kicker { font-family: var(--mono); font-size: .54rem; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+  .timer__value { font-family: var(--serif); font-size: clamp(2.4rem, 6vw, 3.6rem); font-weight: 300; line-height: .9; letter-spacing: -.04em; }
+  .timer__status { font-family: var(--mono); font-size: .56rem; letter-spacing: .08em; text-transform: uppercase; color: var(--red); min-height: 1em; }
+  .duration { display: flex; gap: 6px; margin-top: 4px; }
+  .duration button {
+    flex: 1; border: 1px solid var(--line-2); background: transparent; color: var(--muted);
+    padding: 7px 0; font-family: var(--mono); font-size: .62rem; cursor: pointer;
+  }
+  .duration button.is-active { border-color: var(--ink); background: var(--ink); color: var(--paper); }
+  .start {
+    border: 1px solid var(--red); background: var(--red); color: #fff; padding: 11px 14px;
+    font-family: var(--mono); font-size: .66rem; letter-spacing: .1em; text-transform: uppercase; cursor: pointer;
+  }
+  .start:hover { background: var(--ink); border-color: var(--ink); }
+  .start.is-paused { background: var(--paper); color: var(--red); }
+
+  .problem-row { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; margin-top: 26px; }
+  .problem { font-family: var(--serif); font-size: clamp(3.4rem, 10vw, 6rem); font-weight: 300; line-height: .9; letter-spacing: -.05em; }
+  .answer {
+    width: min(180px, 34vw); border: 0; border-bottom: 2px solid var(--ink); background: transparent;
+    color: var(--ink); font-family: var(--serif); font-size: clamp(2rem, 5vw, 3rem); text-align: center;
+    padding: 0 0 4px; outline: none; caret-color: var(--red);
+  }
+  .answer::placeholder { color: var(--faint); }
+  .answer:disabled { opacity: .45; }
+  .feedback { min-height: 1.4em; margin-top: 14px; font-family: var(--mono); font-size: .66rem; letter-spacing: .05em; text-transform: uppercase; color: var(--green); }
+  .feedback.is-wrong { color: var(--red); }
+  .hint { margin-top: 22px; font-family: var(--mono); font-size: .54rem; letter-spacing: .06em; color: var(--faint); }
+
+  .stats { display: grid; grid-template-columns: repeat(5, 1fr); border-bottom: 2px solid var(--ink); }
+  .stat { padding: 16px 0 18px; border-right: 1px solid var(--line); }
+  .stat:last-child { border-right: 0; }
+  .stat span { display: block; font-family: var(--mono); font-size: .5rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  .stat b { display: block; margin-top: 4px; font-family: var(--serif); font-size: 1.7rem; font-weight: 300; line-height: 1; }
+  .stat:first-child b { color: var(--green); }
+  .stat:nth-child(2) b { color: var(--red); }
+
+  .history { margin-top: 26px; }
+  .history__head { display: flex; align-items: baseline; gap: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+  .history__head h2 { margin: 0; font-family: var(--serif); font-size: 1.25rem; font-weight: 300; }
+  .history__head button { margin-left: auto; border: 0; background: none; color: var(--muted); font-family: var(--mono); font-size: .54rem; letter-spacing: .08em; text-transform: uppercase; cursor: pointer; }
+  .history__head button:hover { color: var(--red); }
+  table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: .58rem; color: var(--muted); }
+  th { padding: 8px 6px 8px 0; text-align: left; font-weight: 400; letter-spacing: .06em; text-transform: uppercase; color: var(--faint); border-bottom: 1px solid var(--line); }
+  td { padding: 8px 6px 8px 0; border-bottom: 1px dotted var(--line); }
+  td:nth-child(4), td:nth-child(5) { color: var(--ink); }
+  .empty { padding: 18px 0; font-family: var(--mono); font-size: .56rem; color: var(--faint); }
+
+  .result {
+    position: fixed; inset: 0; z-index: 20; display: none; place-items: center;
+    background: rgba(27, 26, 23, .45); padding: 20px;
+  }
+  .result.is-open { display: grid; }
+  .result__card {
+    width: min(420px, 100%); background: var(--sheet); border: 2px solid var(--ink); padding: 28px;
+    box-shadow: 10px 10px 0 rgba(27, 26, 23, .18);
+  }
+  .result__card h2 { margin: 0 0 4px; font-family: var(--serif); font-size: 2rem; font-weight: 300; letter-spacing: -.03em; }
+  .result__card .kicker { color: var(--red); }
+  .result__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 20px 0 22px; padding: 14px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .result__grid div { display: grid; gap: 2px; }
+  .result__grid span { font-family: var(--mono); font-size: .48rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  .result__grid b { font-family: var(--serif); font-size: 1.4rem; font-weight: 300; }
+  .result__actions { display: flex; gap: 8px; }
+  .result__actions button { flex: 1; padding: 10px; border: 1px solid var(--ink); background: transparent; font-family: var(--mono); font-size: .58rem; letter-spacing: .08em; text-transform: uppercase; cursor: pointer; }
+  .result__actions button:first-child { background: var(--ink); color: var(--paper); }
+
+  @media (max-width: 760px) {
+    .board { grid-template-columns: 1fr; }
+    .practice { padding-right: 0; border-right: 0; }
+    .timer { padding: 18px 0; border-top: 1px solid var(--line); grid-template-columns: 1fr 1fr; align-items: end; gap: 10px; }
+    .timer__value { font-size: 2.2rem; }
+    .duration, .start { grid-column: span 2; }
+    .stats { grid-template-columns: repeat(3, 1fr); }
+    .stat:nth-child(3) { border-right: 0; }
+    .stat:nth-child(4), .stat:nth-child(5) { border-top: 1px solid var(--line); }
+    .stat { padding: 12px 0; }
+    header { gap: 10px; }
+    .seal { width: 36px; height: 36px; }
+  }
+</style>
+</head>
+<body>
+<main class="app">
+  <header>
+    <div class="brand">Nohea<small>устный счёт · память · 5–15 минут</small></div>
+    <div class="seal" aria-hidden="true"></div>
+  </header>
+
+  <section class="board" aria-label="Тренировка">
+    <div class="practice">
+      <div class="kicker">задача</div>
+      <div class="problem-row">
+        <span class="problem" id="problem">9 + 4 =</span>
+        <input class="answer" id="answer" type="text" inputmode="numeric" autocomplete="off" placeholder="?" aria-label="Ответ" disabled>
+      </div>
+      <div class="feedback" id="feedback" aria-live="polite"></div>
+      <div class="hint">введите ответ — следующая задача появится сама · Enter — старт</div>
+    </div>
+
+    <aside class="timer" aria-label="Таймер">
+      <div class="timer__label">таймер</div>
+      <div class="timer__value" id="timer">05:00</div>
+      <div class="timer__status" id="status">готов</div>
+      <div class="duration" role="group" aria-label="Длительность">
+        <button type="button" data-min="5" class="is-active">5</button>
+        <button type="button" data-min="10">10</button>
+        <button type="button" data-min="15">15</button>
+      </div>
+      <button class="start" id="start" type="button">начать</button>
+    </aside>
+  </section>
+
+  <section class="stats" aria-label="Статистика">
+    <div class="stat"><span>верно</span><b id="correct">0</b></div>
+    <div class="stat"><span>ошибки</span><b id="incorrect">0</b></div>
+    <div class="stat"><span>серия</span><b id="streak">0</b></div>
+    <div class="stat"><span>лучшая</span><b id="best">0</b></div>
+    <div class="stat"><span>в минуту</span><b id="speed">0.0</b></div>
+  </section>
+
+  <section class="history">
+    <div class="history__head">
+      <h2>История</h2>
+      <button type="button" id="clear-history">очистить</button>
+    </div>
+    <div id="history-body"></div>
+  </section>
+</main>
+
+<div class="result" id="result" role="dialog" aria-modal="true" aria-labelledby="result-title">
+  <div class="result__card">
+    <div class="kicker" id="result-kicker">сессия завершена</div>
+    <h2 id="result-title">Хорошая работа.</h2>
+    <div class="result__grid" id="result-grid"></div>
+    <div class="result__actions">
+      <button type="button" id="again">ещё раз</button>
+      <button type="button" id="close-result">закрыть</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const HISTORY_KEY = 'nohea.history.v1';
+  const state = {
+    duration: 5,
+    session: false,
+    paused: false,
+    deadline: 0,
+    remaining: 0,
+    tick: 0,
+    startedAt: 0,
+    problemAt: 0,
+    expected: '',
+    level: 0,
+    correct: 0,
+    incorrect: 0,
+    streak: 0,
+    best: 0,
+    answered: 0,
+    responseTimes: [],
+    blockWrong: false,
+  };
+
+  const rnd = (a, b) => Math.floor(Math.random() * (b - a + 1)) + a;
+  const pad = (n) => String(n).padStart(2, '0');
+
+  function nextProblem() {
+    state.level += 1;
+    const stage = Math.min(6, 1 + Math.floor(state.level / 10));
+    let a, b, op;
+    if (stage === 1) { a = rnd(1, 9); b = rnd(1, 9); op = Math.random() < .5 ? '+' : '−'; }
+    else if (stage === 2) { a = rnd(5, 30); b = rnd(1, 20); op = Math.random() < .5 ? '+' : '−'; }
+    else if (stage === 3) { a = rnd(2, 12); b = rnd(2, 12); op = ['+', '−', '×'][rnd(0, 2)]; }
+    else if (stage === 4) { a = rnd(10, 60); b = rnd(2, 15); op = ['+', '−', '×'][rnd(0, 2)]; }
+    else if (stage === 5) {
+      op = ['+', '−', '×', '÷'][rnd(0, 3)];
+      if (op === '÷') { b = rnd(2, 12); const ans = rnd(2, 12); a = b * ans; }
+      else { a = rnd(10, 99); b = rnd(2, 20); }
+    } else {
+      op = ['+', '−', '×', '÷'][rnd(0, 3)];
+      if (op === '÷') { b = rnd(2, 15); const ans = rnd(3, 20); a = b * ans; }
+      else { a = rnd(20, 150); b = rnd(3, 30); }
+    }
+    let answer;
+    if (op === '+') answer = a + b;
+    else if (op === '−') { if (a < b) { const t = a; a = b; b = t; } answer = a - b; }
+    else if (op === '×') answer = a * b;
+    else answer = a / b;
+    state.expected = String(answer);
+    $('problem').textContent = `${a} ${op} ${b} =`;
+    state.problemAt = performance.now();
+    $('answer').value = '';
+    state.blockWrong = false;
+  }
+
+  function setTimer(seconds) {
+    const s = Math.max(0, Math.ceil(seconds));
+    $('timer').textContent = `${pad(Math.floor(s / 60))}:${pad(s % 60)}`;
+  }
+
+  function updateStats() {
+    $('correct').textContent = String(state.correct);
+    $('incorrect').textContent = String(state.incorrect);
+    $('streak').textContent = String(state.streak);
+    $('best').textContent = String(state.best);
+    const elapsed = state.session ? Math.max(1 / 60, (performance.now() - state.startedAt) / 60000) : 1 / 60;
+    $('speed').textContent = (state.correct / elapsed).toFixed(1);
+  }
+
+  function feedback(text, wrong) {
+    const el = $('feedback');
+    el.textContent = text;
+    el.classList.toggle('is-wrong', Boolean(wrong));
+  }
+
+  function startSession() {
+    if (state.session && !state.paused) { pauseSession(); return; }
+    if (state.session && state.paused) { resumeSession(); return; }
+    state.session = true;
+    state.paused = false;
+    state.remaining = state.duration * 60;
+    state.startedAt = performance.now();
+    state.deadline = performance.now() + state.remaining * 1000;
+    state.correct = 0;
+    state.incorrect = 0;
+    state.streak = 0;
+    state.best = 0;
+    state.answered = 0;
+    state.level = 0;
+    state.responseTimes = [];
+    $('start').textContent = 'пауза';
+    $('start').classList.remove('is-paused');
+    $('status').textContent = 'идёт';
+    $('answer').disabled = false;
+    $('answer').focus();
+    setTimer(state.remaining);
+    updateStats();
+    nextProblem();
+    feedback('');
+    clearInterval(state.tick);
+    state.tick = window.setInterval(tick, 200);
+  }
+
+  function pauseSession() {
+    if (!state.session || state.paused) return;
+    state.paused = true;
+    state.remaining = Math.max(0, (state.deadline - performance.now()) / 1000);
+    clearInterval(state.tick);
+    $('start').textContent = 'продолжить';
+    $('start').classList.add('is-paused');
+    $('status').textContent = 'пауза';
+    $('answer').disabled = true;
+  }
+
+  function resumeSession() {
+    if (!state.session || !state.paused) return;
+    state.paused = false;
+    state.deadline = performance.now() + state.remaining * 1000;
+    $('start').textContent = 'пауза';
+    $('start').classList.remove('is-paused');
+    $('status').textContent = 'идёт';
+    $('answer').disabled = false;
+    $('answer').focus();
+    state.tick = window.setInterval(tick, 200);
+  }
+
+  function tick() {
+    if (!state.session || state.paused) return;
+    const remain = Math.max(0, (state.deadline - performance.now()) / 1000);
+    setTimer(remain);
+    if (remain <= 0) finish(false);
+  }
+
+  function finish(manual) {
+    if (!state.session) return;
+    state.session = false;
+    state.paused = false;
+    clearInterval(state.tick);
+    $('answer').disabled = true;
+    $('start').textContent = 'начать';
+    $('start').classList.remove('is-paused');
+    $('status').textContent = manual ? 'остановлено' : 'время';
+    const elapsed = Math.max(0, (performance.now() - state.startedAt) / 1000);
+    const accuracy = state.answered ? (state.correct / state.answered) * 100 : 0;
+    const avg = state.responseTimes.length ? state.responseTimes.reduce((a, b) => a + b, 0) / state.responseTimes.length : 0;
+    const result = {
+      date: new Date().toISOString(),
+      minutes: state.duration,
+      elapsed: Math.round(elapsed),
+      answered: state.answered,
+      correct: state.correct,
+      incorrect: state.incorrect,
+      accuracy: Math.round(accuracy * 10) / 10,
+      best: state.best,
+      ppm: Math.round((state.correct / Math.max(elapsed / 60, 1 / 60)) * 10) / 10,
+      avg: Math.round(avg * 100) / 100,
+    };
+    saveResult(result);
+    showResult(result, manual);
+    updateStats();
+  }
+
+  function saveResult(result) {
+    let list = [];
+    try { list = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch (e) { list = []; }
+    list.unshift(result);
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(list.slice(0, 12)));
+    renderHistory();
+  }
+
+  function renderHistory() {
+    let list = [];
+    try { list = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch (e) { list = []; }
+    const body = $('history-body');
+    if (!list.length) {
+      body.innerHTML = '<div class="empty">Пока пусто. Первая сессия появится здесь.</div>';
+      return;
+    }
+    body.innerHTML = `<table><thead><tr><th>дата</th><th>мин</th><th>решено</th><th>точность</th><th>темп</th></tr></thead><tbody>${list.map((r) => {
+      const d = new Date(r.date);
+      const date = `${pad(d.getDate())}.${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      return `<tr><td>${date}</td><td>${r.minutes}</td><td>${r.correct}/${r.answered}</td><td>${r.accuracy}%</td><td>${r.ppm}/мин</td></tr>`;
+    }).join('')}</tbody></table>`;
+  }
+
+  function showResult(result, manual) {
+    $('result-kicker').textContent = manual ? 'остановлено вручную' : 'время вышло';
+    $('result-title').textContent = result.correct >= 20 ? 'Отличная серия.' : result.correct >= 8 ? 'Хорошая работа.' : 'Ещё подход.';
+    $('result-grid').innerHTML = `
+      <div><span>решено</span><b>${result.answered}</b></div>
+      <div><span>верно</span><b>${result.correct}</b></div>
+      <div><span>точность</span><b>${result.accuracy}%</b></div>
+      <div><span>лучшая серия</span><b>${result.best}</b></div>
+      <div><span>темп</span><b>${result.ppm}/мин</b></div>
+      <div><span>среднее</span><b>${result.avg} с</b></div>`;
+    $('result').classList.add('is-open');
+  }
+
+  function closeResult() {
+    $('result').classList.remove('is-open');
+  }
+
+  $('answer').addEventListener('input', () => {
+    if (!state.session || state.paused) return;
+    const text = $('answer').value.trim();
+    if (!text) { state.blockWrong = false; return; }
+    if (text === state.expected) {
+      const elapsed = Math.max(0.15, (performance.now() - state.problemAt) / 1000);
+      state.responseTimes.push(elapsed);
+      state.correct += 1;
+      state.streak += 1;
+      state.best = Math.max(state.best, state.streak);
+      state.answered += 1;
+      feedback('верно');
+      updateStats();
+      window.setTimeout(nextProblem, 90);
+      return;
+    }
+    if (state.blockWrong) return;
+    if (text.length >= state.expected.length) {
+      state.incorrect += 1;
+      state.streak = 0;
+      state.answered += 1;
+      state.blockWrong = true;
+      feedback('мимо — следующая', true);
+      updateStats();
+      window.setTimeout(nextProblem, 280);
+    }
+  });
+
+  $('answer').addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' && !state.session) startSession();
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' && !state.session && !$('result').classList.contains('is-open')) startSession();
+  });
+
+  $('start').addEventListener('click', startSession);
+  document.querySelectorAll('[data-min]').forEach((button) => {
+    button.addEventListener('click', () => {
+      if (state.session) return;
+      state.duration = Number(button.dataset.min);
+      document.querySelectorAll('[data-min]').forEach((b) => b.classList.toggle('is-active', b === button));
+      setTimer(state.duration * 60);
+      $('answer').focus();
+    });
+  });
+
+  $('again').addEventListener('click', () => { closeResult(); startSession(); });
+  $('close-result').addEventListener('click', closeResult);
+  $('result').addEventListener('click', (event) => { if (event.target === $('result')) closeResult(); });
+  $('clear-history').addEventListener('click', () => {
+    if (!window.confirm('Очистить историю тренировок?')) return;
+    localStorage.removeItem(HISTORY_KEY);
+    renderHistory();
+  });
+
+  setTimer(5 * 60);
+  renderHistory();
+  updateStats();
+})();
+</script>
+</body>
+</html>
